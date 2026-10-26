@@ -3,6 +3,8 @@ import cors from 'cors';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { 
   getAllTeams, 
   getTeamByEmail, 
@@ -19,6 +21,8 @@ import {
   initPostgres,
   isPostgresConnected,
   getPostgresError,
+  testConnection,
+  getDatabaseConfig,
   pgGetTeamById,
   pgGetTeamByEmail,
   pgGetTeamByName,
@@ -30,7 +34,19 @@ import {
   migrateFromJSON
 } from './postgres.js';
 
-dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Reliably load .env from project root, server directory, and process.cwd()
+const envPaths = [
+  path.resolve(__dirname, '../.env'),
+  path.resolve(__dirname, '.env'),
+  path.resolve(process.cwd(), '.env')
+];
+
+for (const envPath of envPaths) {
+  dotenv.config({ path: envPath });
+}
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -92,18 +108,27 @@ app.get('/api/health', (req, res) => {
 });
 
 /**
- * Database Health & Connectivity Status
+ * Database Health & Connectivity Status (uses live SELECT 1 test)
  */
-app.get('/api/db/health', (req, res) => {
-  const connected = isPostgresConnected();
-  const error = getPostgresError();
+app.get('/api/db/health', async (req, res) => {
+  const testRes = await testConnection();
+  const config = getDatabaseConfig();
   res.json({
-    connected,
-    engine: connected ? 'Neon PostgreSQL' : 'Local JSON Fallback',
-    databaseUrlConfigured: Boolean(process.env.DATABASE_URL?.trim()),
-    error: connected ? null : error,
+    connected: testRes.connected,
+    engine: testRes.connected ? 'Neon PostgreSQL' : 'Local JSON Fallback',
+    configMode: config ? (config.type === 'url' ? 'DATABASE_URL' : 'Individual Variables (PGHOST/PGUSER)') : 'None',
+    database: testRes.database || null,
+    error: testRes.connected ? null : (testRes.error || getPostgresError()),
     timestamp: new Date().toISOString()
   });
+});
+
+/**
+ * Dedicated Safe Connection Test endpoint (SELECT 1)
+ */
+app.post('/api/db/test', async (req, res) => {
+  const testRes = await testConnection();
+  res.json(testRes);
 });
 
 /**

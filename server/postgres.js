@@ -1,6 +1,21 @@
 import pg from 'pg';
 import dotenv from 'dotenv';
-dotenv.config();
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Reliably load .env from project root, server directory, and process.cwd()
+const envPaths = [
+  path.resolve(__dirname, '../.env'),
+  path.resolve(__dirname, '.env'),
+  path.resolve(process.cwd(), '.env')
+];
+
+for (const envPath of envPaths) {
+  dotenv.config({ path: envPath });
+}
 
 const { Pool } = pg;
 
@@ -16,16 +31,30 @@ let isConnected = false;
 let connectionError = null;
 
 /**
- * Initialize PostgreSQL connection pool with Neon SSL
+ * Sanitize error messages to prevent exposing credentials or passwords in logs
  */
-export function getPool() {
-  const dbUrl = process.env.DATABASE_URL?.trim();
-  if (!dbUrl) {
-    return null;
-  }
+export function sanitizeErrorMessage(message) {
+  if (!message || typeof message !== 'string') return 'Unknown database error';
+  return message
+    .replace(/(postgres(?:ql)?:\/\/[^:]+:)(?:.*)(@[a-zA-Z0-9.-]+)/gi, '$1***$2')
+    .replace(/(password[=:]\s*)[^\s;&]+/gi, '$1***');
+}
 
-  if (!pool) {
-    pool = new Pool({
+/**
+ * Resolve database configuration from DATABASE_URL or individual PG* variables
+ */
+export function getDatabaseConfig() {
+  const dbUrl = (process.env.DATABASE_URL || '').trim();
+  const host = (process.env.PGHOST || process.env.PG_HOST || '').trim();
+  const database = (process.env.PGDATABASE || process.env.PG_DATABASE || process.env.PGNAME || 'neondb').trim();
+  const user = (process.env.PGUSER || process.env.PG_USER || '').trim();
+  const password = process.env.PGPASSWORD || process.env.PG_PASSWORD || '';
+  const port = parseInt(process.env.PGPORT || process.env.PG_PORT || '5432', 10);
+
+  // 1. Connection string provided
+  if (dbUrl) {
+    return {
+      type: 'url',
       connectionString: dbUrl,
       ssl: {
         rejectUnauthorized: false
@@ -33,10 +62,50 @@ export function getPool() {
       max: 10,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 10000
-    });
+    };
+  }
+
+  // 2. Individual parameters provided (PGHOST, PGUSER, PGPASSWORD)
+  if (user || host || password) {
+    return {
+      type: 'params',
+      user: user || undefined,
+      password: password || undefined,
+      host: host || undefined,
+      database: database || 'neondb',
+      port: isNaN(port) ? 5432 : port,
+      ssl: {
+        rejectUnauthorized: false
+      },
+      max: 10,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Initialize or get PostgreSQL connection pool with Neon SSL
+ */
+export function getPool(forceNew = false) {
+  const config = getDatabaseConfig();
+  if (!config) {
+    return null;
+  }
+
+  if (forceNew && pool) {
+    pool.end().catch(() => {});
+    pool = null;
+  }
+
+  if (!pool) {
+    const { type, ...poolOptions } = config;
+    pool = new Pool(poolOptions);
 
     pool.on('error', (err) => {
-      console.error('[POSTGRES POOL ERROR]', err.message);
+      console.error('[POSTGRES POOL ERROR]', sanitizeErrorMessage(err.message));
     });
   }
 
@@ -44,47 +113,99 @@ export function getPool() {
 }
 
 /**
+ * Execute a safe database connection test (e.g. SELECT 1)
+ */
+export async function testConnection() {
+  const config = getDatabaseConfig();
+  if (!config) {
+    return {
+      connected: false,
+      error: 'No database credentials configured in .env (provide DATABASE_URL or PGHOST, PGUSER, PGPASSWORD).'
+    };
+  }
+
+  if (config.type === 'params' && !config.host) {
+    return {
+      connected: false,
+      error: 'PGHOST is missing. In Neon, PGHOST (e.g. ep-xxxxxx.us-east-2.aws.neon.tech) is required to connect.'
+    };
+  }
+
+  const currentPool = getPool();
+  if (!currentPool) {
+    return {
+      connected: false,
+      error: 'Unable to initialize PostgreSQL connection pool.'
+    };
+  }
+
+  let client = null;
+  try {
+    client = await currentPool.connect();
+    const result = await client.query('SELECT 1 AS alive, NOW() AS server_time, current_database() AS db_name, version() AS pg_version;');
+    return {
+      connected: true,
+      database: result.rows[0]?.db_name,
+      serverTime: result.rows[0]?.server_time,
+      version: result.rows[0]?.pg_version
+    };
+  } catch (err) {
+    return {
+      connected: false,
+      error: sanitizeErrorMessage(err.message)
+    };
+  } finally {
+    if (client) client.release();
+  }
+}
+
+/**
  * Test connectivity & run schema migrations safely
  */
 export async function initPostgres() {
-  const currentPool = getPool();
-  if (!currentPool) {
-    connectionError = 'DATABASE_URL environment variable is not configured in .env';
+  const config = getDatabaseConfig();
+  if (!config) {
+    connectionError = 'Database credentials not configured in .env';
     console.warn(`\n[POSTGRES NOTICE] ${connectionError}`);
-    console.warn(`Configure DATABASE_URL=<neon_connection_string> in .env to connect to Neon.\n`);
+    console.warn(`Configure DATABASE_URL or (PGHOST, PGDATABASE, PGUSER, PGPASSWORD) in .env to connect to Neon.\n`);
+    return { success: false, error: connectionError };
+  }
+
+  if (config.type === 'params' && !config.host) {
+    connectionError = 'PGHOST is missing. Neon requires a remote host (e.g. ep-xxxxxx.aws.neon.tech).';
+    console.warn(`\n[POSTGRES NOTICE] ${connectionError}\n`);
     return { success: false, error: connectionError };
   }
 
   try {
-    // 1. Test basic connectivity
-    const client = await currentPool.connect();
-    const testResult = await client.query('SELECT NOW() AS current_time, current_database() AS db_name, version() AS pg_version;');
-    client.release();
+    const testResult = await testConnection();
+    if (!testResult.connected) {
+      throw new Error(testResult.error);
+    }
 
     isConnected = true;
     connectionError = null;
 
     console.log(`\n==================================================`);
     console.log(`[NEON POSTGRESQL CONNECTED]`);
-    console.log(`Database: ${testResult.rows[0].db_name}`);
-    console.log(`Timestamp: ${testResult.rows[0].current_time}`);
+    console.log(`Database: ${testResult.database}`);
+    console.log(`Timestamp: ${testResult.serverTime}`);
     console.log(`SSL: Enabled (Encrypted)`);
     console.log(`==================================================\n`);
 
-    // 2. Run schema migrations
+    // Run schema migrations safely (DDL with IF NOT EXISTS)
     await runMigrations();
 
     return { 
       success: true, 
-      database: testResult.rows[0].db_name, 
-      timestamp: testResult.rows[0].current_time 
+      database: testResult.database, 
+      timestamp: testResult.serverTime 
     };
   } catch (err) {
     isConnected = false;
-    connectionError = err.message;
-    console.error(`\n[NEON POSTGRESQL CONNECTION FAILED]`, err.message);
-    console.error(`Ensure DATABASE_URL in .env has valid Neon credentials and sslmode=require.\n`);
-    return { success: false, error: err.message };
+    connectionError = sanitizeErrorMessage(err.message);
+    console.error(`\n[NEON POSTGRESQL CONNECTION FAILED]`, connectionError);
+    return { success: false, error: connectionError };
   }
 }
 
