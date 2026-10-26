@@ -6,9 +6,10 @@
     "passwordHash": "$2b$10$dYKv0GBOKPPkCHqsan04VeOpjODNNbEUN9ygFMNRv.niLYrO9BxFO",
     "squadSize": 4,
     "registeredAt": "2026-10-26T17:39:11.383Z",
-    "status": "Verified & Confirmed",
+    "status": "APPROVED",
     "rewardPoints": 100,
     "role": "team_leader",
+    "approvedAt": "2026-10-26T19:00:00.000Z",
     "members": [
       {
         "id": "mem-1793040782594-0",
@@ -20,7 +21,7 @@
         "phone": "9876543210",
         "isLeader": true,
         "slotId": "slot-1",
-        "slotTime": "9:30 AM – 10:30 AM",
+        "slotTime": "9:30 AM - 10:30 AM",
         "slotBookedAt": "2026-10-26T18:53:02.618Z",
         "updatedAt": "2026-10-26T18:53:02.594Z"
       },
@@ -33,9 +34,9 @@
         "department": "Computer Science & Engineering",
         "phone": "9876543211",
         "isLeader": false,
-        "slotId": null,
-        "slotTime": null,
-        "slotBookedAt": null,
+        "slotId": "slot-1",
+        "slotTime": "9:30 AM - 10:30 AM",
+        "slotBookedAt": "2026-10-26T18:53:02.618Z",
         "updatedAt": "2026-10-26T18:53:02.594Z"
       },
       {
@@ -47,9 +48,9 @@
         "department": "Information Technology",
         "phone": "9876543212",
         "isLeader": false,
-        "slotId": null,
-        "slotTime": null,
-        "slotBookedAt": null,
+        "slotId": "slot-2",
+        "slotTime": "11:00 AM - 12:00 PM",
+        "slotBookedAt": "2026-10-26T18:53:02.618Z",
         "updatedAt": "2026-10-26T18:53:02.594Z"
       },
       {
@@ -61,11 +62,78 @@
         "department": "Artificial Intelligence & Data Science",
         "phone": "9876543213",
         "isLeader": false,
-        "slotId": null,
-        "slotTime": null,
-        "slotBookedAt": null,
+        "slotId": "slot-2",
+        "slotTime": "11:00 AM - 12:00 PM",
+        "slotBookedAt": "2026-10-26T18:53:02.618Z",
         "updatedAt": "2026-10-26T18:53:02.594Z"
       }
     ]
+  },
+  {
+    "teamId": "ELITEFX002",
+    "teamName": "NEXUS_CREW",
+    "email": "karthik.ug.25.cs@francisxavier.ac.in",
+    "passwordHash": "$2b$10$dYKv0GBOKPPkCHqsan04VeOpjODNNbEUN9ygFMNRv.niLYrO9BxFO",
+    "squadSize": 4,
+    "registeredAt": "2026-10-26T19:30:00.000Z",
+    "status": "PENDING_APPROVAL",
+    "rewardPoints": 100,
+    "role": "team_leader",
+    "members": [
+      {
+        "id": "mem-1793041000000-0",
+        "name": "Karthik R",
+        "registerNumber": "950721104020",
+        "email": "karthik.ug.25.cs@francisxavier.ac.in",
+        "year": "3rd Year",
+        "department": "Computer Science & Engineering",
+        "phone": "9876543220",
+        "isLeader": true,
+        "slotId": null,
+        "slotTime": null,
+        "slotBookedAt": null,
+        "updatedAt": "2026-10-26T19:30:00.000Z"
+      }
+    ]
+  },
+  {
+    "teamId": "ELITEFX003",
+    "teamName": "ALPHA_TEST_1793045369379",
+    "email": "alpha_1793045369379@francisxavier.ac.in",
+    "passwordHash": "$2b$10$r9kDCmgWgKGaBs4YTq7cmeZ/yeCb0rMQ0uO/dXkQbXC2rw6jkQWHK",
+    "squadSize": 4,
+    "registeredAt": "2026-10-26T20:09:29.546Z",
+    "status": "PENDING_APPROVAL",
+    "rewardPoints": 100,
+    "role": "team_leader",
+    "members": []
+  },
+  {
+    "teamId": "ELITEFX004",
+    "teamName": "CYBER_VIPERS_1793045369568",
+    "email": "vipers_1793045369568@francisxavier.ac.in",
+    "passwordHash": "$2b$10$MiDlTiLQvOgFAIAIFCzSG.WOSR9rFGiaptu1WysX3vPm.sSsSJYxC",
+    "squadSize": 4,
+    "registeredAt": "2026-10-26T20:09:29.748Z",
+    "status": "APPROVED",
+    "rewardPoints": 100,
+    "role": "team_leader",
+    "members": [
+      {
+        "id": "mem-1793045370319-0",
+        "name": "Test Member",
+        "registerNumber": "950721334169",
+        "email": "vipers_1793045369568@francisxavier.ac.in",
+        "year": "3rd Year",
+        "department": "Computer Science",
+        "phone": "9876543210",
+        "isLeader": true,
+        "slotId": null,
+        "slotTime": null,
+        "slotBookedAt": null,
+        "updatedAt": "2026-10-26T20:09:30.319Z"
+      }
+    ],
+    "approvedAt": "2026-10-26T20:09:29.924Z"
   }
 ]

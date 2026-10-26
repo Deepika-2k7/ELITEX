@@ -1,7 +1,9 @@
 import pg from 'pg';
 import dotenv from 'dotenv';
+import bcrypt from 'bcryptjs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { gradeAssessment } from './data/questions.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -290,6 +292,102 @@ export async function runMigrations() {
       `, [slot.id, slot.slotNumber, slot.time, slot.date, slot.totalCapacity]);
     }
 
+    // 6. Schema updates on Teams table for approvals
+    await client.query(`
+      ALTER TABLE teams ADD COLUMN IF NOT EXISTS approved_at TIMESTAMPTZ;
+      ALTER TABLE teams ADD COLUMN IF NOT EXISTS rejection_reason TEXT;
+    `);
+
+    // 7. Admins Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS admins (
+        id VARCHAR(60) PRIMARY KEY,
+        email VARCHAR(255) NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        role VARCHAR(50) DEFAULT 'super_admin',
+        must_change_password BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // 8. Assessment Results Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS assessment_results (
+        id SERIAL PRIMARY KEY,
+        team_id VARCHAR(10) NOT NULL REFERENCES teams(team_id) ON DELETE CASCADE,
+        register_number VARCHAR(50) NOT NULL UNIQUE,
+        participant_name VARCHAR(255) NOT NULL,
+        score INT DEFAULT 0,
+        total_questions INT DEFAULT 12,
+        max_score INT DEFAULT 12,
+        percentage NUMERIC(5, 2) DEFAULT 0,
+        time_spent_seconds INT DEFAULT 0,
+        started_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        submitted_at TIMESTAMPTZ,
+        status VARCHAR(50) DEFAULT 'IN_PROGRESS'
+      );
+    `);
+
+    // 9. Malpractice Records Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS malpractice_records (
+        id SERIAL PRIMARY KEY,
+        team_id VARCHAR(10) NOT NULL REFERENCES teams(team_id) ON DELETE CASCADE,
+        register_number VARCHAR(50) NOT NULL,
+        participant_name VARCHAR(255) NOT NULL,
+        incident_type VARCHAR(100) NOT NULL,
+        description TEXT,
+        evidence TEXT,
+        status VARCHAR(50) DEFAULT 'UNDER_REVIEW',
+        action_taken VARCHAR(255) DEFAULT 'None',
+        admin_notes TEXT,
+        recorded_by VARCHAR(100) DEFAULT 'System',
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // 10. Audit Logs Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS audit_logs (
+        id SERIAL PRIMARY KEY,
+        admin_email VARCHAR(255) NOT NULL,
+        action VARCHAR(100) NOT NULL,
+        target_type VARCHAR(50),
+        target_id VARCHAR(100),
+        details TEXT,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // 11. Announcements Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS announcements (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        message TEXT NOT NULL,
+        priority VARCHAR(50) DEFAULT 'NORMAL',
+        created_by VARCHAR(255) DEFAULT 'Admin',
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // 12. Idempotently Seed Initial Admin
+    const ADMIN_EMAIL = 'eliteadmin@francisxavier.ac.in';
+    const INITIAL_PASSWORD = 'elitexadmin';
+    const adminCheck = await client.query('SELECT id FROM admins WHERE LOWER(email) = $1;', [ADMIN_EMAIL.toLowerCase()]);
+    if (adminCheck.rows.length === 0) {
+      const passwordHash = bcrypt.hashSync(INITIAL_PASSWORD, 10);
+      await client.query(`
+        INSERT INTO admins (id, email, password_hash, role, must_change_password)
+        VALUES ($1, $2, $3, 'super_admin', TRUE);
+      `, [`admin-${Date.now()}`, ADMIN_EMAIL, passwordHash]);
+      console.log(`[POSTGRES SEED] Initial administrator account initialized (${ADMIN_EMAIL}).`);
+    } else {
+      console.log(`[POSTGRES SEED] Administrator account exists (${ADMIN_EMAIL}) — preserving existing credentials.`);
+    }
+
     await client.query('COMMIT;');
     console.log('[POSTGRES MIGRATIONS] All database tables verified and slots seeded successfully.');
   } catch (err) {
@@ -487,7 +585,7 @@ export async function pgCreateTeam({ teamName, email, passwordHash }) {
       INSERT INTO teams (
         team_id, team_name, email, password_hash, squad_size, status, reward_points, role
       )
-      VALUES ($1, $2, $3, $4, 4, 'Verified & Confirmed', 100, 'team_leader')
+      VALUES ($1, $2, $3, $4, 4, 'PENDING_APPROVAL', 100, 'team_leader')
       RETURNING 
         team_id as "teamId",
         team_name as "teamName",
@@ -832,3 +930,656 @@ export async function migrateFromJSON(jsonTeams) {
 
   console.log('[POSTGRES MIGRATION] JSON migration verification complete.');
 }
+
+// ==============================================================================
+// POSTGRESQL ADMIN OPERATIONS
+// ==============================================================================
+
+export async function pgGetAdminByEmail(email) {
+  const currentPool = getPool();
+  if (!currentPool) return null;
+
+  const res = await currentPool.query(`
+    SELECT id, email, password_hash as "passwordHash", role, must_change_password as "mustChangePassword", created_at as "createdAt", updated_at as "updatedAt"
+    FROM admins
+    WHERE LOWER(email) = $1;
+  `, [(email || '').trim().toLowerCase()]);
+
+  return res.rows[0] || null;
+}
+
+export async function pgGetAdminById(id) {
+  const currentPool = getPool();
+  if (!currentPool) return null;
+
+  const res = await currentPool.query(`
+    SELECT id, email, password_hash as "passwordHash", role, must_change_password as "mustChangePassword", created_at as "createdAt", updated_at as "updatedAt"
+    FROM admins
+    WHERE id = $1;
+  `, [id]);
+
+  return res.rows[0] || null;
+}
+
+export async function pgUpdateAdminPassword(adminId, newPasswordHash) {
+  const currentPool = getPool();
+  if (!currentPool) throw new Error('Database connection not available');
+
+  const res = await currentPool.query(`
+    UPDATE admins
+    SET password_hash = $1, must_change_password = FALSE, updated_at = CURRENT_TIMESTAMP
+    WHERE id = $2
+    RETURNING id, email, role, must_change_password as "mustChangePassword", updated_at as "updatedAt";
+  `, [newPasswordHash, adminId]);
+
+  if (res.rows.length === 0) throw new Error('Administrator account not found.');
+  return res.rows[0];
+}
+
+export async function pgAdminGetDashboardStats() {
+  const currentPool = getPool();
+  if (!currentPool) return null;
+
+  const teamCountRes = await currentPool.query(`
+    SELECT 
+      COUNT(*)::int as total,
+      COUNT(*) FILTER (WHERE status = 'APPROVED' OR status = 'Verified & Confirmed')::int as approved,
+      COUNT(*) FILTER (WHERE status = 'PENDING_APPROVAL' OR status IS NULL)::int as pending,
+      COUNT(*) FILTER (WHERE status = 'REJECTED')::int as rejected
+    FROM teams;
+  `);
+
+  const participantCountRes = await currentPool.query(`SELECT COUNT(*)::int as total FROM team_members;`);
+  const slotStats = await pgGetSlotStats();
+
+  const assessCountRes = await currentPool.query(`
+    SELECT 
+      COUNT(*)::int as total,
+      COUNT(*) FILTER (WHERE status = 'COMPLETED')::int as completed
+    FROM assessment_results;
+  `);
+
+  const malCountRes = await currentPool.query(`
+    SELECT COUNT(*)::int as flagged
+    FROM malpractice_records
+    WHERE status = 'CONFIRMED' OR status = 'UNDER_REVIEW';
+  `);
+
+  const tc = teamCountRes.rows[0];
+  const totalParticipants = participantCountRes.rows[0].total;
+  const completedAssessments = assessCountRes.rows[0].completed;
+
+  return {
+    totalTeams: tc.total,
+    maxTeams: 50,
+    totalParticipants,
+    pendingApprovals: tc.pending,
+    approvedTeams: tc.approved,
+    rejectedTeams: tc.rejected,
+    slots: slotStats,
+    completedAssessments,
+    awaitingAssessments: Math.max(0, totalParticipants - completedAssessments),
+    availableResults: assessCountRes.rows[0].total,
+    flaggedMalpractice: malCountRes.rows[0].flagged
+  };
+}
+
+export async function pgAdminGetAllTeams({ search = '', status = '' } = {}) {
+  const currentPool = getPool();
+  if (!currentPool) return [];
+
+  let query = `
+    SELECT 
+      t.team_id as "teamId",
+      t.team_name as "teamName",
+      t.email,
+      t.squad_size as "squadSize",
+      t.status,
+      t.reward_points as "rewardPoints",
+      t.role,
+      t.created_at as "registeredAt",
+      t.approved_at as "approvedAt",
+      t.rejection_reason as "rejectionReason",
+      COUNT(tm.id)::int as "membersCount",
+      COUNT(sb.id)::int as "slotsBookedCount",
+      COUNT(ar.id) FILTER (WHERE ar.status = 'COMPLETED')::int as "assessmentCompletedCount"
+    FROM teams t
+    LEFT JOIN team_members tm ON t.team_id = tm.team_id
+    LEFT JOIN slot_bookings sb ON tm.register_number = sb.register_number
+    LEFT JOIN assessment_results ar ON tm.register_number = ar.register_number
+    WHERE 1=1
+  `;
+  const params = [];
+
+  if (search) {
+    params.push(`%${search.trim().toLowerCase()}%`);
+    query += ` AND (LOWER(t.team_id) LIKE $${params.length} OR LOWER(t.team_name) LIKE $${params.length} OR LOWER(t.email) LIKE $${params.length})`;
+  }
+
+  if (status) {
+    if (status === 'APPROVED') {
+      query += ` AND (t.status = 'APPROVED' OR t.status = 'Verified & Confirmed')`;
+    } else {
+      params.push(status);
+      query += ` AND t.status = $${params.length}`;
+    }
+  }
+
+  query += `
+    GROUP BY t.team_id, t.team_name, t.email, t.squad_size, t.status, t.reward_points, t.role, t.created_at, t.approved_at, t.rejection_reason
+    ORDER BY t.created_at ASC;
+  `;
+
+  const res = await currentPool.query(query, params);
+
+  // Attach members for detailed display
+  for (const team of res.rows) {
+    const memRes = await currentPool.query(`
+      SELECT 
+        m.id, m.name, m.register_number as "registerNumber", m.email, m.year, m.department, m.phone, m.is_leader as "isLeader",
+        sb.slot_id as "slotId", s.time_display as "slotTime"
+      FROM team_members m
+      LEFT JOIN slot_bookings sb ON m.register_number = sb.register_number
+      LEFT JOIN slots s ON sb.slot_id = s.slot_id
+      WHERE m.team_id = $1
+      ORDER BY m.is_leader DESC, m.created_at ASC;
+    `, [team.teamId]);
+    team.members = memRes.rows;
+  }
+
+  return res.rows;
+}
+
+export async function pgAdminApproveTeam(teamId) {
+  const currentPool = getPool();
+  if (!currentPool) throw new Error('Database connection not available');
+
+  const res = await currentPool.query(`
+    UPDATE teams
+    SET status = 'APPROVED', approved_at = CURRENT_TIMESTAMP
+    WHERE team_id = $1
+    RETURNING team_id as "teamId", team_name as "teamName", email, status, approved_at as "approvedAt";
+  `, [teamId.trim().toUpperCase()]);
+
+  if (res.rows.length === 0) throw new Error(`Team ${teamId} not found.`);
+  return res.rows[0];
+}
+
+export async function pgAdminRejectTeam(teamId, reason = 'Registration requirements not met') {
+  const currentPool = getPool();
+  if (!currentPool) throw new Error('Database connection not available');
+
+  const res = await currentPool.query(`
+    UPDATE teams
+    SET status = 'REJECTED', rejection_reason = $1
+    WHERE team_id = $2
+    RETURNING team_id as "teamId", team_name as "teamName", email, status, rejection_reason as "rejectionReason";
+  `, [reason, teamId.trim().toUpperCase()]);
+
+  if (res.rows.length === 0) throw new Error(`Team ${teamId} not found.`);
+  return res.rows[0];
+}
+
+export async function pgAdminUpdateTeam(teamId, updates) {
+  const currentPool = getPool();
+  if (!currentPool) throw new Error('Database connection not available');
+
+  const normalizedId = teamId.trim().toUpperCase();
+
+  if (updates.teamName) {
+    const dup = await currentPool.query(`SELECT team_id FROM teams WHERE LOWER(team_name) = $1 AND team_id != $2;`, [updates.teamName.trim().toLowerCase(), normalizedId]);
+    if (dup.rows.length > 0) throw new Error(`Team name "${updates.teamName}" is already taken.`);
+  }
+
+  if (updates.email) {
+    const dup = await currentPool.query(`SELECT team_id FROM teams WHERE LOWER(email) = $1 AND team_id != $2;`, [updates.email.trim().toLowerCase(), normalizedId]);
+    if (dup.rows.length > 0) throw new Error(`Email "${updates.email}" is already used by another team.`);
+  }
+
+  const res = await currentPool.query(`
+    UPDATE teams
+    SET 
+      team_name = COALESCE($1, team_name),
+      email = COALESCE($2, email),
+      status = COALESCE($3, status),
+      updated_at = CURRENT_TIMESTAMP
+    WHERE team_id = $4
+    RETURNING team_id as "teamId", team_name as "teamName", email, status, updated_at as "updatedAt";
+  `, [updates.teamName?.trim(), updates.email?.trim().toLowerCase(), updates.status, normalizedId]);
+
+  if (res.rows.length === 0) throw new Error(`Team ${teamId} not found.`);
+  return res.rows[0];
+}
+
+export async function pgAdminDeleteTeam(teamId) {
+  const currentPool = getPool();
+  if (!currentPool) throw new Error('Database connection not available');
+
+  const normalizedId = teamId.trim().toUpperCase();
+  const res = await currentPool.query(`
+    DELETE FROM teams
+    WHERE team_id = $1
+    RETURNING team_id as "teamId", team_name as "teamName";
+  `, [normalizedId]);
+
+  if (res.rows.length === 0) throw new Error(`Team ${teamId} not found.`);
+  return { success: true, deletedTeam: res.rows[0] };
+}
+
+export async function pgAdminGetAllParticipants({ search = '', teamId = '', slotId = '' } = {}) {
+  const currentPool = getPool();
+  if (!currentPool) return [];
+
+  let query = `
+    SELECT 
+      m.id,
+      m.name,
+      m.register_number as "registerNumber",
+      m.email,
+      m.year,
+      m.department,
+      m.phone,
+      m.is_leader as "isLeader",
+      m.team_id as "teamId",
+      t.team_name as "teamName",
+      t.status as "teamStatus",
+      sb.slot_id as "slotId",
+      s.time_display as "slotTime",
+      ar.status as "assessmentStatus",
+      ar.score,
+      ar.max_score as "maxScore",
+      ar.percentage,
+      COUNT(mp.id)::int as "malpracticeCount"
+    FROM team_members m
+    JOIN teams t ON m.team_id = t.team_id
+    LEFT JOIN slot_bookings sb ON m.register_number = sb.register_number
+    LEFT JOIN slots s ON sb.slot_id = s.slot_id
+    LEFT JOIN assessment_results ar ON m.register_number = ar.register_number
+    LEFT JOIN malpractice_records mp ON m.register_number = mp.register_number
+    WHERE 1=1
+  `;
+  const params = [];
+
+  if (search) {
+    params.push(`%${search.trim().toLowerCase()}%`);
+    query += ` AND (LOWER(m.name) LIKE $${params.length} OR LOWER(m.register_number) LIKE $${params.length} OR LOWER(m.email) LIKE $${params.length} OR LOWER(m.team_id) LIKE $${params.length} OR LOWER(t.team_name) LIKE $${params.length})`;
+  }
+
+  if (teamId) {
+    params.push(teamId.trim().toUpperCase());
+    query += ` AND m.team_id = $${params.length}`;
+  }
+
+  if (slotId) {
+    params.push(slotId.trim().toLowerCase());
+    query += ` AND sb.slot_id = $${params.length}`;
+  }
+
+  query += `
+    GROUP BY m.id, m.name, m.register_number, m.email, m.year, m.department, m.phone, m.is_leader, m.team_id, t.team_name, t.status, sb.slot_id, s.time_display, ar.status, ar.score, ar.max_score, ar.percentage
+    ORDER BY m.team_id ASC, m.is_leader DESC;
+  `;
+
+  const res = await currentPool.query(query, params);
+  return res.rows.map(r => ({
+    ...r,
+    assessmentStatus: r.assessmentStatus || 'NOT_STARTED',
+    hasMalpractice: r.malpracticeCount > 0
+  }));
+}
+
+export async function pgAdminUpdateParticipant(registerNumber, updates) {
+  const currentPool = getPool();
+  if (!currentPool) throw new Error('Database connection not available');
+
+  const normalizedReg = registerNumber.trim().toUpperCase();
+
+  const res = await currentPool.query(`
+    UPDATE team_members
+    SET 
+      name = COALESCE($1, name),
+      email = COALESCE($2, email),
+      phone = COALESCE($3, phone),
+      year = COALESCE($4, year),
+      department = COALESCE($5, department),
+      is_leader = COALESCE($6, is_leader),
+      updated_at = CURRENT_TIMESTAMP
+    WHERE register_number = $7
+    RETURNING id, team_id as "teamId", name, register_number as "registerNumber", email, year, department, phone, is_leader as "isLeader", updated_at as "updatedAt";
+  `, [
+    updates.name?.trim(),
+    updates.email?.trim().toLowerCase(),
+    updates.phone?.trim(),
+    updates.year?.trim(),
+    updates.department?.trim(),
+    updates.isLeader !== undefined ? Boolean(updates.isLeader) : null,
+    normalizedReg
+  ]);
+
+  if (res.rows.length === 0) throw new Error(`Participant with Register Number "${registerNumber}" not found.`);
+  return res.rows[0];
+}
+
+export async function pgAdminMoveParticipant(registerNumber, targetTeamId) {
+  const currentPool = getPool();
+  if (!currentPool) throw new Error('Database connection not available');
+
+  const normalizedReg = registerNumber.trim().toUpperCase();
+  const normalizedTargetTeam = targetTeamId.trim().toUpperCase();
+
+  const client = await currentPool.connect();
+  try {
+    await client.query('BEGIN;');
+
+    const memRes = await client.query(`SELECT team_id FROM team_members WHERE register_number = $1;`, [normalizedReg]);
+    if (memRes.rows.length === 0) throw new Error(`Participant ${registerNumber} not found.`);
+
+    if (memRes.rows[0].team_id === normalizedTargetTeam) throw new Error(`Participant is already in Team ${targetTeamId}.`);
+
+    const targetTeamRes = await client.query(`
+      SELECT t.team_id, t.team_name, COUNT(tm.id)::int as count
+      FROM teams t
+      LEFT JOIN team_members tm ON t.team_id = tm.team_id
+      WHERE t.team_id = $1
+      GROUP BY t.team_id, t.team_name;
+    `, [normalizedTargetTeam]);
+
+    if (targetTeamRes.rows.length === 0) throw new Error(`Target Team ${targetTeamId} not found.`);
+    if (targetTeamRes.rows[0].count >= 4) throw new Error(`Target Team ${targetTeamRes.rows[0].team_name} already has 4 members.`);
+
+    await client.query(`
+      UPDATE team_members
+      SET team_id = $1, is_leader = FALSE, updated_at = CURRENT_TIMESTAMP
+      WHERE register_number = $2;
+    `, [normalizedTargetTeam, normalizedReg]);
+
+    await client.query(`
+      UPDATE slot_bookings
+      SET team_id = $1
+      WHERE register_number = $2;
+    `, [normalizedTargetTeam, normalizedReg]);
+
+    await client.query(`
+      UPDATE assessment_results
+      SET team_id = $1
+      WHERE register_number = $2;
+    `, [normalizedTargetTeam, normalizedReg]);
+
+    await client.query('COMMIT;');
+    return { success: true, registerNumber, targetTeam: normalizedTargetTeam };
+
+  } catch (err) {
+    await client.query('ROLLBACK;');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+export async function pgAdminDeleteParticipant(registerNumber) {
+  const currentPool = getPool();
+  if (!currentPool) throw new Error('Database connection not available');
+
+  const normalizedReg = registerNumber.trim().toUpperCase();
+  const res = await currentPool.query(`
+    DELETE FROM team_members
+    WHERE register_number = $1
+    RETURNING register_number as "registerNumber", name, team_id as "teamId";
+  `, [normalizedReg]);
+
+  if (res.rows.length === 0) throw new Error(`Participant with Register Number "${registerNumber}" not found.`);
+  return { success: true, participant: res.rows[0] };
+}
+
+export async function pgAdminReassignSlot(registerNumber, newSlotId) {
+  const currentPool = getPool();
+  if (!currentPool) throw new Error('Database connection not available');
+
+  const normalizedSlot = (newSlotId || '').trim().toLowerCase();
+  const normalizedReg = registerNumber.trim().toUpperCase();
+
+  const memRes = await currentPool.query(`SELECT team_id FROM team_members WHERE register_number = $1;`, [normalizedReg]);
+  if (memRes.rows.length === 0) throw new Error(`Participant ${registerNumber} not found.`);
+
+  return await pgBookMemberSlot(memRes.rows[0].team_id, normalizedReg, normalizedSlot);
+}
+
+export async function pgAdminCancelSlotBooking(registerNumber) {
+  const currentPool = getPool();
+  if (!currentPool) throw new Error('Database connection not available');
+
+  const normalizedReg = registerNumber.trim().toUpperCase();
+  const res = await currentPool.query(`
+    DELETE FROM slot_bookings
+    WHERE register_number = $1
+    RETURNING register_number as "registerNumber", slot_id as "slotId";
+  `, [normalizedReg]);
+
+  if (res.rows.length === 0) throw new Error(`No booking found for Register Number ${registerNumber}.`);
+  const slots = await pgGetSlotStats();
+  return { success: true, cancelled: res.rows[0], slots };
+}
+
+export async function pgAdminGetAssessmentResults({ search = '', status = '' } = {}) {
+  const currentPool = getPool();
+  if (!currentPool) return [];
+
+  let query = `
+    SELECT 
+      ar.id,
+      ar.team_id as "teamId",
+      t.team_name as "teamName",
+      ar.register_number as "registerNumber",
+      ar.participant_name as "participantName",
+      ar.score,
+      ar.total_questions as "totalQuestions",
+      ar.max_score as "maxScore",
+      ar.percentage,
+      ar.time_spent_seconds as "timeSpentSeconds",
+      ar.started_at as "startedAt",
+      ar.submitted_at as "submittedAt",
+      ar.status,
+      sb.slot_id as "slotId",
+      s.time_display as "slotTime"
+    FROM assessment_results ar
+    JOIN teams t ON ar.team_id = t.team_id
+    LEFT JOIN slot_bookings sb ON ar.register_number = sb.register_number
+    LEFT JOIN slots s ON sb.slot_id = s.slot_id
+    WHERE 1=1
+  `;
+  const params = [];
+
+  if (search) {
+    params.push(`%${search.trim().toLowerCase()}%`);
+    query += ` AND (LOWER(ar.register_number) LIKE $${params.length} OR LOWER(ar.participant_name) LIKE $${params.length} OR LOWER(ar.team_id) LIKE $${params.length} OR LOWER(t.team_name) LIKE $${params.length})`;
+  }
+
+  if (status) {
+    params.push(status);
+    query += ` AND ar.status = $${params.length}`;
+  }
+
+  query += ` ORDER BY ar.submitted_at DESC NULLS LAST, ar.started_at DESC;`;
+
+  const res = await currentPool.query(query, params);
+  return res.rows;
+}
+
+export async function pgSaveAssessmentResult({ teamId, registerNumber, participantName, answers, timeSpentSeconds }) {
+  const currentPool = getPool();
+  if (!currentPool) throw new Error('Database connection not available');
+
+  const normalizedReg = registerNumber.trim().toUpperCase();
+  const normalizedTeam = teamId.trim().toUpperCase();
+  const grading = gradeAssessment(answers);
+
+  const res = await currentPool.query(`
+    INSERT INTO assessment_results (
+      team_id, register_number, participant_name, score, total_questions, max_score, percentage, time_spent_seconds, started_at, submitted_at, status
+    )
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'COMPLETED')
+    ON CONFLICT (register_number) DO UPDATE SET
+      score = EXCLUDED.score,
+      total_questions = EXCLUDED.total_questions,
+      max_score = EXCLUDED.max_score,
+      percentage = EXCLUDED.percentage,
+      time_spent_seconds = EXCLUDED.time_spent_seconds,
+      submitted_at = CURRENT_TIMESTAMP,
+      status = 'COMPLETED'
+    RETURNING 
+      id, team_id as "teamId", register_number as "registerNumber", participant_name as "participantName",
+      score, total_questions as "totalQuestions", max_score as "maxScore", percentage,
+      time_spent_seconds as "timeSpentSeconds", started_at as "startedAt", submitted_at as "submittedAt", status;
+  `, [normalizedTeam, normalizedReg, participantName || 'Participant', grading.score, grading.totalQuestions, grading.maxScore, grading.percentage, timeSpentSeconds || 0]);
+
+  return res.rows[0];
+}
+
+export async function pgAdminGetMalpracticeRecords({ search = '', status = '' } = {}) {
+  const currentPool = getPool();
+  if (!currentPool) return [];
+
+  let query = `
+    SELECT 
+      mp.id,
+      mp.team_id as "teamId",
+      t.team_name as "teamName",
+      mp.register_number as "registerNumber",
+      mp.participant_name as "participantName",
+      mp.incident_type as "incidentType",
+      mp.description,
+      mp.evidence,
+      mp.status,
+      mp.action_taken as "actionTaken",
+      mp.admin_notes as "adminNotes",
+      mp.recorded_by as "recordedBy",
+      mp.created_at as "createdAt",
+      mp.updated_at as "updatedAt"
+    FROM malpractice_records mp
+    LEFT JOIN teams t ON mp.team_id = t.team_id
+    WHERE 1=1
+  `;
+  const params = [];
+
+  if (search) {
+    params.push(`%${search.trim().toLowerCase()}%`);
+    query += ` AND (LOWER(mp.register_number) LIKE $${params.length} OR LOWER(mp.participant_name) LIKE $${params.length} OR LOWER(mp.team_id) LIKE $${params.length} OR LOWER(mp.incident_type) LIKE $${params.length})`;
+  }
+
+  if (status) {
+    params.push(status);
+    query += ` AND mp.status = $${params.length}`;
+  }
+
+  query += ` ORDER BY mp.created_at DESC;`;
+
+  const res = await currentPool.query(query, params);
+  return res.rows;
+}
+
+export async function pgCreateMalpracticeRecord({ teamId, registerNumber, participantName, incidentType, description, evidence, recordedBy }) {
+  const currentPool = getPool();
+  if (!currentPool) throw new Error('Database connection not available');
+
+  const res = await currentPool.query(`
+    INSERT INTO malpractice_records (
+      team_id, register_number, participant_name, incident_type, description, evidence, status, action_taken, recorded_by
+    )
+    VALUES ($1, $2, $3, $4, $5, $6, 'UNDER_REVIEW', 'None', $7)
+    RETURNING 
+      id, team_id as "teamId", register_number as "registerNumber", participant_name as "participantName",
+      incident_type as "incidentType", description, evidence, status, action_taken as "actionTaken",
+      admin_notes as "adminNotes", recorded_by as "recordedBy", created_at as "createdAt", updated_at as "updatedAt";
+  `, [
+    (teamId || '').toUpperCase(),
+    (registerNumber || '').toUpperCase(),
+    participantName || 'Participant',
+    incidentType || 'SUSPICIOUS_ACTIVITY',
+    description || '',
+    evidence || '',
+    recordedBy || 'System'
+  ]);
+
+  return res.rows[0];
+}
+
+export async function pgUpdateMalpracticeRecord(incidentId, { status, actionTaken, adminNotes }) {
+  const currentPool = getPool();
+  if (!currentPool) throw new Error('Database connection not available');
+
+  const res = await currentPool.query(`
+    UPDATE malpractice_records
+    SET 
+      status = COALESCE($1, status),
+      action_taken = COALESCE($2, action_taken),
+      admin_notes = COALESCE($3, admin_notes),
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = $4
+    RETURNING 
+      id, team_id as "teamId", register_number as "registerNumber", participant_name as "participantName",
+      incident_type as "incidentType", description, evidence, status, action_taken as "actionTaken",
+      admin_notes as "adminNotes", recorded_by as "recordedBy", created_at as "createdAt", updated_at as "updatedAt";
+  `, [status, actionTaken, adminNotes, parseInt(incidentId, 10)]);
+
+  if (res.rows.length === 0) throw new Error(`Malpractice record "${incidentId}" not found.`);
+  return res.rows[0];
+}
+
+export async function pgAdminGetAuditLogs(limit = 100) {
+  const currentPool = getPool();
+  if (!currentPool) return [];
+
+  const res = await currentPool.query(`
+    SELECT id, admin_email as "adminEmail", action, target_type as "targetType", target_id as "targetId", details, created_at as "createdAt"
+    FROM audit_logs
+    ORDER BY created_at DESC
+    LIMIT $1;
+  `, [limit]);
+
+  return res.rows;
+}
+
+export async function pgCreateAuditLog({ adminEmail, action, targetType, targetId, details }) {
+  const currentPool = getPool();
+  if (!currentPool) return;
+
+  await currentPool.query(`
+    INSERT INTO audit_logs (admin_email, action, target_type, target_id, details)
+    VALUES ($1, $2, $3, $4, $5);
+  `, [adminEmail || 'Admin', action, targetType || 'SYSTEM', targetId || null, details || '']);
+}
+
+export async function pgAdminGetAnnouncements() {
+  const currentPool = getPool();
+  if (!currentPool) return [];
+
+  const res = await currentPool.query(`
+    SELECT id, title, message, priority, created_by as "createdBy", created_at as "createdAt"
+    FROM announcements
+    ORDER BY created_at DESC;
+  `);
+
+  return res.rows;
+}
+
+export async function pgCreateAnnouncement({ title, message, priority = 'NORMAL', createdBy = 'Admin' }) {
+  const currentPool = getPool();
+  if (!currentPool) throw new Error('Database connection not available');
+
+  const res = await currentPool.query(`
+    INSERT INTO announcements (title, message, priority, created_by)
+    VALUES ($1, $2, $3, $4)
+    RETURNING id, title, message, priority, created_by as "createdBy", created_at as "createdAt";
+  `, [(title || '').trim(), (message || '').trim(), priority, createdBy]);
+
+  return res.rows[0];
+}
+
+export async function pgDeleteAnnouncement(id) {
+  const currentPool = getPool();
+  if (!currentPool) throw new Error('Database connection not available');
+
+  await currentPool.query(`DELETE FROM announcements WHERE id = $1;`, [parseInt(id, 10)]);
+  return { success: true };
+}
+

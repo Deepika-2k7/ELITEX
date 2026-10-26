@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { soundFx } from '../../utils/audio';
 
-export default function AuthPage({ onAuthSuccess, onToast }) {
+export default function AuthPage({ onAuthSuccess, onToast, onOpenAdminLogin }) {
   const [mode, setMode] = useState('register'); // 'register' or 'login'
 
   // Registration Form State (Exact order: 1. Team Name, 2. Email, 3. Password, 4. Confirm Password)
@@ -114,6 +114,14 @@ export default function AuthPage({ onAuthSuccess, onToast }) {
 
       if (!res.ok) {
         throw new Error(data.error || 'Team registration failed. Please try again.');
+      }
+
+      // If pending committee approval, show notice without session entry
+      if (data.pendingApproval) {
+        soundFx.playSuccess();
+        setSuccessMessage(`Registration Submitted! Assigned Team ID: ${data.team.teamId}. Your registration is now pending review and approval by the ELITEX organizing committee before dashboard access is enabled.`);
+        if (onToast) onToast(`Team ${data.team.teamId} registered. Pending approval.`);
+        return;
       }
 
       // Success! Persist session and redirect to Student Dashboard
@@ -513,8 +521,17 @@ export default function AuthPage({ onAuthSuccess, onToast }) {
       </main>
 
       {/* Clean Bottom Footer */}
-      <footer className="w-full py-4 border-t border-slate-200/80 bg-white/60 text-center text-xs font-mono text-slate-500">
-        ELITEX HACKATHON 2026 · Francis Xavier Engineering College · Organised by Elite Batch 2025-29
+      <footer className="w-full py-4 border-t border-slate-200/80 bg-white/60 text-center text-xs font-mono text-slate-500 flex flex-col sm:flex-row items-center justify-between px-6 gap-2">
+        <span>ELITEX HACKATHON 2026 · Francis Xavier Engineering College · Organised by Elite Batch 2025-29</span>
+        {onOpenAdminLogin && (
+          <button 
+            onClick={onOpenAdminLogin}
+            className="text-slate-400 hover:text-navy-900 transition-colors flex items-center space-x-1 underline underline-offset-4"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Admin Portal</span>
+          </button>
+        )}
       </footer>
 
     </div>

@@ -1,0 +1,32 @@
+[
+  {
+    "id": "mal-1793045370571",
+    "teamId": "ELITEFX004",
+    "registerNumber": "TEST_REG_100",
+    "participantName": "Test Participant",
+    "incidentType": "FULLSCREEN_EXIT",
+    "description": "Candidate exited fullscreen mode 3 times",
+    "evidence": "Timestamp: 2026-11-02T10:15:00Z",
+    "status": "DISMISSED",
+    "actionTaken": "None - OS Notification glitch verified",
+    "adminNotes": "Committee reviewed browser logs and confirmed innocent system notification popup.",
+    "recordedBy": "eliteadmin@francisxavier.ac.in",
+    "createdAt": "2026-10-26T20:09:30.571Z",
+    "updatedAt": "2026-10-26T20:09:30.635Z"
+  },
+  {
+    "id": "mal-1793043000000",
+    "teamId": "ELITEFX001",
+    "registerNumber": "950721104015",
+    "participantName": "Deepika P",
+    "incidentType": "FULLSCREEN_EXIT",
+    "description": "Candidate exited fullscreen mode during Phase 1 Assessment",
+    "evidence": "OS Notification window detected at 09:38:12 IST",
+    "status": "DISMISSED",
+    "actionTaken": "Dismissed as false positive - System notification verified",
+    "adminNotes": "Proctoring committee reviewed system logs; OS automatic update prompt triggered exit. Candidate resumed immediately.",
+    "recordedBy": "eliteadmin@francisxavier.ac.in",
+    "createdAt": "2026-11-02T09:38:15.000Z",
+    "updatedAt": "2026-11-02T09:45:00.000Z"
+  }
+]

@@ -296,9 +296,38 @@ export default function Phase1Section({
     });
   };
 
+  // Submit score to backend server
+  const submitScoreToServer = async (finalAnswers) => {
+    try {
+      const token = localStorage.getItem('elitex_token');
+      const primaryReg = team?.members?.[0]?.registerNumber || team?.teamId;
+      const timeSpent = (30 * 60) - secondsRemaining;
+
+      const res = await fetch('/api/assessment/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          registerNumber: primaryReg,
+          answers: finalAnswers,
+          timeSpentSeconds: timeSpent
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.result) {
+        setQuizScore(data.result.score);
+      }
+    } catch (err) {
+      console.warn('Failed to sync assessment score to server:', err);
+    }
+  };
+
   // Auto-submit when time expires
   const handleAutoSubmit = () => {
     calculateFinalScore();
+    submitScoreToServer(answers);
     setQuizSubmitted(true);
     setShowSubmitModal(false);
     soundFx.playSuccess();
@@ -308,6 +337,7 @@ export default function Phase1Section({
   // Manual final submission
   const handleFinalSubmit = () => {
     calculateFinalScore();
+    submitScoreToServer(answers);
     setQuizSubmitted(true);
     setShowSubmitModal(false);
     soundFx.playSuccess();

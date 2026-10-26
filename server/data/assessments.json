@@ -1,0 +1,30 @@
+[
+  {
+    "id": "assess-1793042000000",
+    "teamId": "ELITEFX001",
+    "registerNumber": "950721104015",
+    "participantName": "Deepika P",
+    "score": 11,
+    "totalQuestions": 12,
+    "maxScore": 12,
+    "percentage": 92,
+    "timeSpentSeconds": 480,
+    "startedAt": "2026-11-02T09:35:00.000Z",
+    "submittedAt": "2026-11-02T09:43:00.000Z",
+    "status": "COMPLETED"
+  },
+  {
+    "id": "assess-1793045370540",
+    "teamId": "ELITEFX004",
+    "registerNumber": "TEST_REG_100",
+    "participantName": "Team Participant",
+    "score": 12,
+    "totalQuestions": 12,
+    "maxScore": 12,
+    "percentage": 100,
+    "timeSpentSeconds": 650,
+    "startedAt": "2026-10-26T20:09:30.540Z",
+    "submittedAt": "2026-10-26T20:09:30.540Z",
+    "status": "COMPLETED"
+  }
+]
