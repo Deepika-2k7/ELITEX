@@ -1,0 +1,71 @@
+[
+  {
+    "teamId": "ELITEFX001",
+    "teamName": "ASTRIX",
+    "email": "deepikap.ug.25.cs@francisxavier.ac.in",
+    "passwordHash": "$2b$10$dYKv0GBOKPPkCHqsan04VeOpjODNNbEUN9ygFMNRv.niLYrO9BxFO",
+    "squadSize": 4,
+    "registeredAt": "2026-10-26T17:39:11.383Z",
+    "status": "Verified & Confirmed",
+    "rewardPoints": 100,
+    "role": "team_leader",
+    "members": [
+      {
+        "id": "mem-1793040782594-0",
+        "name": "Deepika P",
+        "registerNumber": "950721104015",
+        "email": "deepikap.ug.25.cs@francisxavier.ac.in",
+        "year": "3rd Year",
+        "department": "Computer Science & Engineering",
+        "phone": "9876543210",
+        "isLeader": true,
+        "slotId": "slot-1",
+        "slotTime": "9:30 AM – 10:30 AM",
+        "slotBookedAt": "2026-10-26T18:53:02.618Z",
+        "updatedAt": "2026-10-26T18:53:02.594Z"
+      },
+      {
+        "id": "mem-1793040782594-1",
+        "name": "Arun Kumar S",
+        "registerNumber": "950721104005",
+        "email": "arunkumar.ug.25.cs@francisxavier.ac.in",
+        "year": "3rd Year",
+        "department": "Computer Science & Engineering",
+        "phone": "9876543211",
+        "isLeader": false,
+        "slotId": null,
+        "slotTime": null,
+        "slotBookedAt": null,
+        "updatedAt": "2026-10-26T18:53:02.594Z"
+      },
+      {
+        "id": "mem-1793040782594-2",
+        "name": "Bavithra M",
+        "registerNumber": "950721104010",
+        "email": "bavithra.ug.25.cs@francisxavier.ac.in",
+        "year": "3rd Year",
+        "department": "Information Technology",
+        "phone": "9876543212",
+        "isLeader": false,
+        "slotId": null,
+        "slotTime": null,
+        "slotBookedAt": null,
+        "updatedAt": "2026-10-26T18:53:02.594Z"
+      },
+      {
+        "id": "mem-1793040782594-3",
+        "name": "Chandran R",
+        "registerNumber": "950721104012",
+        "email": "chandran.ug.25.cs@francisxavier.ac.in",
+        "year": "3rd Year",
+        "department": "Artificial Intelligence & Data Science",
+        "phone": "9876543213",
+        "isLeader": false,
+        "slotId": null,
+        "slotTime": null,
+        "slotBookedAt": null,
+        "updatedAt": "2026-10-26T18:53:02.594Z"
+      }
+    ]
+  }
+]
