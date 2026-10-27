@@ -4,44 +4,52 @@
 
 @layer base {
   body {
-    background-color: #f8fafc;
-    color: #0b132b;
+    background-color: #050814;
+    color: #f1f5f9;
     overflow-x: hidden;
   }
 
-  /* Custom Sleek High-Tech Scrollbar */
+  /* Custom Sleek Futuristic Cyber Scrollbar */
   ::-webkit-scrollbar {
-    width: 7px;
-    height: 7px;
+    width: 6px;
+    height: 6px;
   }
 
   ::-webkit-scrollbar-track {
-    background: #f1f5f9;
+    background: #070c1e;
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
+    background: #1e293b;
     border-radius: 4px;
-    border: 1px solid rgba(16, 185, 129, 0.3);
+    border: 1px solid rgba(0, 240, 255, 0.2);
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #10b981;
-    box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+    background: #00f0ff;
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
   }
 }
 
 /* Neon text & glow utilities */
+.glow-cyan {
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.6), 0 0 20px rgba(0, 240, 255, 0.3);
+}
+
+.glow-blue {
+  text-shadow: 0 0 10px rgba(59, 130, 246, 0.6), 0 0 20px rgba(37, 99, 235, 0.3);
+}
+
+.glow-purple {
+  text-shadow: 0 0 10px rgba(168, 85, 247, 0.6), 0 0 20px rgba(147, 51, 234, 0.3);
+}
+
 .glow-green {
   text-shadow: 0 0 10px rgba(16, 185, 129, 0.6), 0 0 20px rgba(16, 185, 129, 0.3);
 }
 
-.glow-blue {
-  text-shadow: 0 0 10px rgba(0, 240, 255, 0.6), 0 0 20px rgba(37, 99, 235, 0.3);
-}
-
 .text-gradient-elitex {
-  background: linear-gradient(135deg, #10b981 0%, #05df72 45%, #00f0ff 70%, #2563eb 100%);
+  background: linear-gradient(135deg, #00f0ff 0%, #3b82f6 45%, #a855f7 75%, #10b981 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }

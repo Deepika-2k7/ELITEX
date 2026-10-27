@@ -292,10 +292,11 @@ export async function runMigrations() {
       `, [slot.id, slot.slotNumber, slot.time, slot.date, slot.totalCapacity]);
     }
 
-    // 6. Schema updates on Teams table for approvals
+    // 6. Schema updates on Teams table for approvals & 6-digit team code
     await client.query(`
       ALTER TABLE teams ADD COLUMN IF NOT EXISTS approved_at TIMESTAMPTZ;
       ALTER TABLE teams ADD COLUMN IF NOT EXISTS rejection_reason TEXT;
+      ALTER TABLE teams ADD COLUMN IF NOT EXISTS team_code VARCHAR(6) UNIQUE;
     `);
 
     // 7. Admins Table
@@ -376,7 +377,7 @@ export async function runMigrations() {
     // 12. Idempotently Seed Initial Admin
     const ADMIN_EMAIL = 'eliteadmin@francisxavier.ac.in';
     const INITIAL_PASSWORD = 'elitexadmin';
-    const adminCheck = await client.query('SELECT id FROM admins WHERE LOWER(email) = $1;', [ADMIN_EMAIL.toLowerCase()]);
+    const adminCheck = await client.query('SELECT id, password_hash, must_change_password FROM admins WHERE LOWER(email) = $1;', [ADMIN_EMAIL.toLowerCase()]);
     if (adminCheck.rows.length === 0) {
       const passwordHash = bcrypt.hashSync(INITIAL_PASSWORD, 10);
       await client.query(`
@@ -385,7 +386,14 @@ export async function runMigrations() {
       `, [`admin-${Date.now()}`, ADMIN_EMAIL, passwordHash]);
       console.log(`[POSTGRES SEED] Initial administrator account initialized (${ADMIN_EMAIL}).`);
     } else {
-      console.log(`[POSTGRES SEED] Administrator account exists (${ADMIN_EMAIL}) — preserving existing credentials.`);
+      const currentAdmin = adminCheck.rows[0];
+      if (currentAdmin.must_change_password && !bcrypt.compareSync(INITIAL_PASSWORD, currentAdmin.password_hash)) {
+        const passwordHash = bcrypt.hashSync(INITIAL_PASSWORD, 10);
+        await client.query(`UPDATE admins SET password_hash = $1 WHERE id = $2;`, [passwordHash, currentAdmin.id]);
+        console.log(`[POSTGRES SEED] Synchronized initial administrator password hash (${ADMIN_EMAIL}).`);
+      } else {
+        console.log(`[POSTGRES SEED] Administrator account exists (${ADMIN_EMAIL}) — preserving existing credentials.`);
+      }
     }
 
     await client.query('COMMIT;');
@@ -424,6 +432,7 @@ export async function pgGetTeamById(teamId) {
   const teamRes = await currentPool.query(`
     SELECT 
       team_id as "teamId",
+      team_code as "teamCode",
       team_name as "teamName",
       email,
       password_hash as "passwordHash",
@@ -511,6 +520,24 @@ export async function pgGetTeamByName(name) {
 }
 
 /**
+ * Get Team by 6-digit Team Code
+ */
+export async function pgGetTeamByCode(teamCode) {
+  const currentPool = getPool();
+  if (!currentPool) return null;
+
+  const normalized = (teamCode || '').toString().trim();
+  const res = await currentPool.query(`
+    SELECT team_id as "teamId"
+    FROM teams
+    WHERE team_code = $1;
+  `, [normalized]);
+
+  if (res.rows.length === 0) return null;
+  return await pgGetTeamById(res.rows[0].teamId);
+}
+
+/**
  * Get Team Stats (Total registered, slots remaining, next ID)
  */
 export async function pgGetTeamStats() {
@@ -534,7 +561,7 @@ export async function pgGetTeamStats() {
  * Atomically create a new team with sequential Team ID (ELITEFX001 - ELITEFX050)
  * Uses concurrency-safe transaction with advisory lock
  */
-export async function pgCreateTeam({ teamName, email, passwordHash }) {
+export async function pgCreateTeam({ teamName, email, passwordHash, leaderDetails = null }) {
   const currentPool = getPool();
   if (!currentPool) throw new Error('Database connection not available');
 
@@ -577,17 +604,37 @@ export async function pgCreateTeam({ teamName, email, passwordHash }) {
       throw err;
     }
 
-    // 3. Sequential Team ID
+    // Check if leader registerNumber is already in another team
+    if (leaderDetails && leaderDetails.registerNumber) {
+      const normalizedReg = leaderDetails.registerNumber.trim().toUpperCase();
+      const regCheck = await client.query('SELECT team_id FROM team_members WHERE register_number = $1;', [normalizedReg]);
+      if (regCheck.rows.length > 0) {
+        throw new Error(`Register Number "${leaderDetails.registerNumber}" is already registered in a squad.`);
+      }
+    }
+
+    // 3. Generate collision-resistant 6-digit Team Code
+    let teamCode = '';
+    let codeAttempts = 0;
+    while (codeAttempts < 1000) {
+      teamCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const codeCheck = await client.query('SELECT team_id FROM teams WHERE team_code = $1;', [teamCode]);
+      if (codeCheck.rows.length === 0) break;
+      codeAttempts++;
+    }
+
+    // 4. Sequential Team ID
     const nextSeq = currentCount + 1;
     const teamId = `ELITEFX${String(nextSeq).padStart(3, '0')}`;
 
     const insertRes = await client.query(`
       INSERT INTO teams (
-        team_id, team_name, email, password_hash, squad_size, status, reward_points, role
+        team_id, team_code, team_name, email, password_hash, squad_size, status, reward_points, role
       )
-      VALUES ($1, $2, $3, $4, 4, 'PENDING_APPROVAL', 100, 'team_leader')
+      VALUES ($1, $2, $3, $4, $5, 4, 'PENDING_APPROVAL', 100, 'team_leader')
       RETURNING 
         team_id as "teamId",
+        team_code as "teamCode",
         team_name as "teamName",
         email,
         password_hash as "passwordHash",
@@ -596,13 +643,140 @@ export async function pgCreateTeam({ teamName, email, passwordHash }) {
         reward_points as "rewardPoints",
         role,
         created_at as "registeredAt";
-    `, [teamId, normalizedName, normalizedEmail, passwordHash]);
+    `, [teamId, teamCode, normalizedName, normalizedEmail, passwordHash]);
+
+    const initialMembers = [];
+
+    // If leader details provided, add as Member #1
+    if (leaderDetails && leaderDetails.name && leaderDetails.registerNumber) {
+      const memberId = `mem-${Date.now()}-0`;
+      const memInsert = await client.query(`
+        INSERT INTO team_members (
+          id, team_id, name, register_number, email, year, department, phone, is_leader
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE)
+        RETURNING 
+          id, name, register_number as "registerNumber", email, year, department, phone, is_leader as "isLeader";
+      `, [
+        memberId,
+        teamId,
+        leaderDetails.name.trim(),
+        leaderDetails.registerNumber.trim().toUpperCase(),
+        (leaderDetails.email || normalizedEmail).trim().toLowerCase(),
+        leaderDetails.year || '3rd Year',
+        leaderDetails.department || 'Computer Science & Engineering',
+        (leaderDetails.phone || '').trim().replace(/\D/g, '')
+      ]);
+      initialMembers.push(memInsert.rows[0]);
+    }
 
     await client.query('COMMIT;');
 
     const newTeam = insertRes.rows[0];
-    newTeam.members = [];
+    newTeam.members = initialMembers;
     return newTeam;
+
+  } catch (err) {
+    await client.query('ROLLBACK;');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Concurrency-Safe Student Team Joining via 6-Digit Code
+ */
+export async function pgJoinTeamByCode(teamCode, studentData) {
+  const currentPool = getPool();
+  if (!currentPool) throw new Error('Database connection not available');
+
+  const normalizedCode = (teamCode || '').toString().trim();
+  if (!/^\d{6}$/.test(normalizedCode)) {
+    throw new Error('Team Code must be a 6-digit number.');
+  }
+
+  const client = await currentPool.connect();
+  try {
+    await client.query('BEGIN;');
+
+    // 1. Lock team row for update to prevent concurrent joining overcapacity race conditions
+    const teamRes = await client.query(`
+      SELECT team_id, team_name, status, squad_size
+      FROM teams 
+      WHERE team_code = $1 
+      FOR UPDATE;
+    `, [normalizedCode]);
+
+    if (teamRes.rows.length === 0) {
+      throw new Error('Invalid 6-digit Team Code. No team found with this code.');
+    }
+
+    const team = teamRes.rows[0];
+
+    // 2. Count existing members
+    const countRes = await client.query(`
+      SELECT COUNT(*)::int as count 
+      FROM team_members 
+      WHERE team_id = $1;
+    `, [team.team_id]);
+
+    const memberCount = countRes.rows[0].count;
+    if (memberCount >= 4) {
+      const err = new Error('TEAM FULL');
+      err.code = 'TEAM_FULL';
+      throw err;
+    }
+
+    const name = (studentData.name || '').trim();
+    const registerNumber = (studentData.registerNumber || '').trim().toUpperCase();
+    const email = (studentData.email || '').trim().toLowerCase();
+    const year = (studentData.year || '').trim();
+    const department = (studentData.department || '').trim();
+    const phone = (studentData.phone || '').trim().replace(/\D/g, '');
+
+    if (!name || !registerNumber || !email || !year || !department || !phone) {
+      throw new Error('All 6 student fields are mandatory to join a squad (Name, Reg No, Email, Year, Dept, Phone).');
+    }
+
+    // 3. Check if already in this team
+    const thisTeamCheck = await client.query(`
+      SELECT id FROM team_members 
+      WHERE team_id = $1 AND (register_number = $2 OR LOWER(email) = $3);
+    `, [team.team_id, registerNumber, email]);
+
+    if (thisTeamCheck.rows.length > 0) {
+      throw new Error('You are already a registered member of this team.');
+    }
+
+    // 4. Check if already in another team
+    const otherTeamCheck = await client.query(`
+      SELECT t.team_name, t.team_id 
+      FROM team_members tm
+      JOIN teams t ON tm.team_id = t.team_id
+      WHERE tm.register_number = $1 OR LOWER(tm.email) = $2;
+    `, [registerNumber, email]);
+
+    if (otherTeamCheck.rows.length > 0) {
+      throw new Error(`This student (${registerNumber}) is already registered in Team ${otherTeamCheck.rows[0].team_name} (${otherTeamCheck.rows[0].team_id}). Students are restricted to one team only.`);
+    }
+
+    // 5. Insert member
+    const memberId = `mem-${Date.now()}-${memberCount}`;
+    await client.query(`
+      INSERT INTO team_members (
+        id, team_id, name, register_number, email, year, department, phone, is_leader
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE);
+    `, [memberId, team.team_id, name, registerNumber, email, year, department, phone]);
+
+    await client.query('COMMIT;');
+
+    const fullUpdatedTeam = await pgGetTeamById(team.team_id);
+    return {
+      team: fullUpdatedTeam,
+      newMember: { id: memberId, name, registerNumber, email, year, department, phone, isLeader: false }
+    };
 
   } catch (err) {
     await client.query('ROLLBACK;');
@@ -807,16 +981,19 @@ export async function pgBookMemberSlot(teamId, registerNumber, slotId) {
 
     const member = memberRes.rows[0];
 
-    // 3. Check if member already booked this exact slot
+    // 3. Check if member already booked a slot - changes are strictly locked
     const existingBooking = await client.query(`
       SELECT slot_id FROM slot_bookings WHERE register_number = $1;
     `, [normalizedReg]);
 
-    if (existingBooking.rows.length > 0 && existingBooking.rows[0].slot_id === normalizedSlot) {
-      await client.query('COMMIT;');
-      const updatedTeam = await pgGetTeamById(normalizedTeamId);
-      const slots = await pgGetSlotStats();
-      return { team: updatedTeam, member, slots };
+    if (existingBooking.rows.length > 0) {
+      if (existingBooking.rows[0].slot_id === normalizedSlot) {
+        await client.query('COMMIT;');
+        const updatedTeam = await pgGetTeamById(normalizedTeamId);
+        const slots = await pgGetSlotStats();
+        return { team: updatedTeam, member, slots };
+      }
+      throw new Error('YOUR PHASE 1 SLOT IS CONFIRMED. SLOT CHANGES ARE NOT PERMITTED.');
     }
 
     // 4. Check slot capacity (max 50)

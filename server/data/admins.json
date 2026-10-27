@@ -2,10 +2,10 @@
   {
     "id": "admin-1793044379998",
     "email": "eliteadmin@francisxavier.ac.in",
-    "passwordHash": "$2b$10$Cx2biXLur61S8Iy3LE812OlgEZOd4yqjtTwp.42inN8TwaJoYKKXK",
+    "passwordHash": "$2b$10$kQX1RVHh3P1QYXgKmUb3v.KgYmrcGT2chVMstKzhOIInYxFHgv1ou",
     "role": "super_admin",
     "mustChangePassword": true,
     "createdAt": "2026-10-26T19:52:59.998Z",
-    "updatedAt": "2026-10-26T19:52:59.999Z"
+    "updatedAt": "2026-10-27T04:55:00.000Z"
   }
 ]

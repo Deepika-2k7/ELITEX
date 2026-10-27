@@ -1,5 +1,176 @@
 [
   {
+    "id": "log-1793078694409-789",
+    "adminEmail": "eliteadmin@francisxavier.ac.in",
+    "action": "MALPRACTICE_UPDATED",
+    "targetType": "MALPRACTICE",
+    "targetId": "mal-1793078694392",
+    "details": "Administrator updated incident mal-1793078694392 status to DISMISSED.",
+    "createdAt": "2026-10-27T05:24:54.409Z"
+  },
+  {
+    "id": "log-1793078694394-786",
+    "adminEmail": "eliteadmin@francisxavier.ac.in",
+    "action": "MALPRACTICE_RECORDED",
+    "targetType": "MALPRACTICE",
+    "targetId": "TEST_REG_100",
+    "details": "Administrator recorded FULLSCREEN_EXIT incident for TEST_REG_100.",
+    "createdAt": "2026-10-27T05:24:54.394Z"
+  },
+  {
+    "id": "log-1793078694255-751",
+    "adminEmail": "eliteadmin@francisxavier.ac.in",
+    "action": "SLOT_CANCELLED",
+    "targetType": "SLOT",
+    "targetId": "950721210415",
+    "details": "Administrator cancelled slot booking for 950721210415.",
+    "createdAt": "2026-10-27T05:24:54.255Z"
+  },
+  {
+    "id": "log-1793078694237-415",
+    "adminEmail": "eliteadmin@francisxavier.ac.in",
+    "action": "SLOT_REASSIGNED",
+    "targetType": "SLOT",
+    "targetId": "950721210415",
+    "details": "Administrator reassigned participant 950721210415 to slot-2.",
+    "createdAt": "2026-10-27T05:24:54.237Z"
+  },
+  {
+    "id": "log-1793078693956-521",
+    "adminEmail": "eliteadmin@francisxavier.ac.in",
+    "action": "TEAM_APPROVED",
+    "targetType": "TEAM",
+    "targetId": "ELITEFX013",
+    "details": "Administrator approved registration for Team CYBER_VIPERS_1793078693751 (ELITEFX013).",
+    "createdAt": "2026-10-27T05:24:53.956Z"
+  },
+  {
+    "id": "log-1793078693852-42",
+    "adminEmail": "System",
+    "action": "TEAM_REGISTERED",
+    "targetType": "TEAM",
+    "targetId": "ELITEFX013",
+    "details": "Team CYBER_VIPERS_1793078693751 (ELITEFX013) registered with leader email vipers_1793078693751@francisxavier.ac.in. Status: PENDING_APPROVAL.",
+    "createdAt": "2026-10-27T05:24:53.852Z"
+  },
+  {
+    "id": "log-1793078693734-483",
+    "adminEmail": "System",
+    "action": "TEAM_REGISTERED",
+    "targetType": "TEAM",
+    "targetId": "ELITEFX012",
+    "details": "Team ALPHA_TEST_1793078693624 (ELITEFX012) registered with leader email alpha_1793078693624@francisxavier.ac.in. Status: PENDING_APPROVAL.",
+    "createdAt": "2026-10-27T05:24:53.734Z"
+  },
+  {
+    "id": "log-1793078693611-322",
+    "adminEmail": "eliteadmin@francisxavier.ac.in",
+    "action": "ADMIN_LOGIN",
+    "targetType": "ADMIN",
+    "targetId": "admin-1793044379998",
+    "details": "Administrator logged in from IP 127.0.0.1.",
+    "createdAt": "2026-10-27T05:24:53.611Z"
+  },
+  {
+    "id": "log-1793078560927-155",
+    "adminEmail": "eliteadmin@francisxavier.ac.in",
+    "action": "TEAM_APPROVED",
+    "targetType": "TEAM",
+    "targetId": "ELITEFX011",
+    "details": "Administrator approved registration for Team QUANTUM_LEAP_1793078559998 (ELITEFX011).",
+    "createdAt": "2026-10-27T05:22:40.927Z"
+  },
+  {
+    "id": "log-1793078560895-859",
+    "adminEmail": "eliteadmin@francisxavier.ac.in",
+    "action": "ADMIN_LOGIN",
+    "targetType": "ADMIN",
+    "targetId": "admin-1793044379998",
+    "details": "Administrator logged in from IP 127.0.0.1.",
+    "createdAt": "2026-10-27T05:22:40.895Z"
+  },
+  {
+    "id": "log-1793078560354-209",
+    "adminEmail": "System",
+    "action": "MEMBER_JOINED",
+    "targetType": "TEAM",
+    "targetId": "ELITEFX011",
+    "details": "Student Operative 4 (950721560002) enlisted in Team QUANTUM_LEAP_1793078559998 via code 146159. Current roster: 4/4.",
+    "createdAt": "2026-10-27T05:22:40.354Z"
+  },
+  {
+    "id": "log-1793078560337-625",
+    "adminEmail": "System",
+    "action": "MEMBER_JOINED",
+    "targetType": "TEAM",
+    "targetId": "ELITEFX011",
+    "details": "Student Operative 3 (950721560001) enlisted in Team QUANTUM_LEAP_1793078559998 via code 146159. Current roster: 3/4.",
+    "createdAt": "2026-10-27T05:22:40.337Z"
+  },
+  {
+    "id": "log-1793078560321-891",
+    "adminEmail": "System",
+    "action": "MEMBER_JOINED",
+    "targetType": "TEAM",
+    "targetId": "ELITEFX011",
+    "details": "Student Operative 2 (950721560000) enlisted in Team QUANTUM_LEAP_1793078559998 via code 146159. Current roster: 2/4.",
+    "createdAt": "2026-10-27T05:22:40.321Z"
+  },
+  {
+    "id": "log-1793078560256-734",
+    "adminEmail": "System",
+    "action": "TEAM_CREATED",
+    "targetType": "TEAM",
+    "targetId": "ELITEFX011",
+    "details": "Team QUANTUM_LEAP_1793078559998 (ELITEFX011) created with 6-digit code [146159] by leader leader_1793078559998@francisxavier.ac.in.",
+    "createdAt": "2026-10-27T05:22:40.256Z"
+  },
+  {
+    "id": "log-1793078559956-533",
+    "adminEmail": "eliteadmin@francisxavier.ac.in",
+    "action": "ADMIN_LOGIN",
+    "targetType": "ADMIN",
+    "targetId": "admin-1793044379998",
+    "details": "Administrator logged in from IP 127.0.0.1.",
+    "createdAt": "2026-10-27T05:22:39.956Z"
+  },
+  {
+    "id": "log-1793077023914-394",
+    "adminEmail": "eliteadmin@francisxavier.ac.in",
+    "action": "ADMIN_LOGIN",
+    "targetType": "ADMIN",
+    "targetId": "admin-1793044379998",
+    "details": "Administrator logged in from IP 127.0.0.1.",
+    "createdAt": "2026-10-27T04:57:03.914Z"
+  },
+  {
+    "id": "log-1793076018544-859",
+    "adminEmail": "System",
+    "action": "TEAM_REGISTERED",
+    "targetType": "TEAM",
+    "targetId": "ELITEFX010",
+    "details": "Team ADMIN (ELITEFX010) registered with leader email eliteadmin@francisxavier.ac.in. Status: PENDING_APPROVAL.",
+    "createdAt": "2026-10-27T04:40:18.544Z"
+  },
+  {
+    "id": "log-1793075496097-169",
+    "adminEmail": "System",
+    "action": "TEAM_REGISTERED",
+    "targetType": "TEAM",
+    "targetId": "ELITEFX009",
+    "details": "Team INFOX (ELITEFX009) registered with leader email deepika@gmail.com. Status: PENDING_APPROVAL.",
+    "createdAt": "2026-10-27T04:31:36.097Z"
+  },
+  {
+    "id": "log-1793075451505-49",
+    "adminEmail": "System",
+    "action": "TEAM_REGISTERED",
+    "targetType": "TEAM",
+    "targetId": "ELITEFX008",
+    "details": "Team zxcb (ELITEFX008) registered with leader email dfghj@gmail.com. Status: PENDING_APPROVAL.",
+    "createdAt": "2026-10-27T04:30:51.505Z"
+  },
+  {
     "id": "log-1793075151494-116",
     "adminEmail": "eliteadmin@francisxavier.ac.in",
     "action": "MALPRACTICE_UPDATED",

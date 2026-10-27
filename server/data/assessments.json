@@ -15,7 +15,7 @@
   },
   {
     "id": "assess-1793045370540",
-    "teamId": "ELITEFX007",
+    "teamId": "ELITEFX013",
     "registerNumber": "TEST_REG_100",
     "participantName": "Team Participant",
     "score": 12,
@@ -24,7 +24,7 @@
     "percentage": 100,
     "timeSpentSeconds": 650,
     "startedAt": "2026-10-26T20:09:30.540Z",
-    "submittedAt": "2026-10-27T04:25:51.445Z",
+    "submittedAt": "2026-10-27T05:24:54.360Z",
     "status": "COMPLETED"
   }
 ]

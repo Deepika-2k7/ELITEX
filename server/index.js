@@ -11,6 +11,9 @@ import {
   getTeamById, 
   getTeamByName, 
   getTeamStats, 
+  getTeamByCode,
+  joinTeamByCode,
+  generateUniqueTeamCode,
   createTeam,
   updateTeamMembers,
   getSlotStats,
@@ -52,6 +55,8 @@ import {
   pgGetTeamById,
   pgGetTeamByEmail,
   pgGetTeamByName,
+  pgGetTeamByCode,
+  pgJoinTeamByCode,
   pgGetTeamStats,
   pgCreateTeam,
   pgUpdateTeamMembers,
@@ -350,6 +355,183 @@ app.post('/api/register', async (req, res) => {
   } catch (err) {
     console.error('Error during team registration:', err);
     res.status(500).json({ error: err.message || 'Server error during team registration.' });
+  }
+});
+
+// ---------------------- DEDICATED CREATE TEAM ENDPOINT ----------------------
+
+app.post(['/api/teams/create', '/api/team/create'], async (req, res) => {
+  try {
+    const { teamName, email, password, confirmPassword, leaderDetails } = req.body;
+
+    if (!teamName || !email) {
+      return res.status(400).json({ error: 'Team Name and Leader Email are required.' });
+    }
+
+    const trimmedTeamName = teamName.trim();
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(normalizedEmail)) {
+      return res.status(400).json({ error: 'Please enter a valid email address.' });
+    }
+
+    if (password && confirmPassword && password !== confirmPassword) {
+      return res.status(400).json({ error: 'Password and Confirm Password do not match.' });
+    }
+
+    const stats = isPostgresConnected() ? await pgGetTeamStats() : getTeamStats();
+    if (stats.isFull) {
+      return res.status(400).json({ error: 'All 50 Team Slots Filled. Squad creation is now closed.' });
+    }
+
+    const passwordHash = password ? bcrypt.hashSync(password, 10) : bcrypt.hashSync('elitex2026', 10);
+
+    let newTeam;
+    if (isPostgresConnected()) {
+      newTeam = await pgCreateTeam({
+        teamName: trimmedTeamName,
+        email: normalizedEmail,
+        passwordHash,
+        leaderDetails
+      });
+    } else {
+      newTeam = createTeam({
+        teamName: trimmedTeamName,
+        email: normalizedEmail,
+        passwordHash,
+        leaderDetails
+      });
+    }
+
+    const token = generateStudentToken(newTeam);
+    const { passwordHash: _, ...sanitizedTeam } = newTeam;
+
+    // Record audit log
+    const auditData = {
+      adminEmail: 'System',
+      action: 'TEAM_CREATED',
+      targetType: 'TEAM',
+      targetId: newTeam.teamId,
+      details: `Team ${newTeam.teamName} (${newTeam.teamId}) created with 6-digit code [${newTeam.teamCode}] by leader ${newTeam.email}.`
+    };
+    if (isPostgresConnected()) await pgCreateAuditLog(auditData);
+    else createAuditLog(auditData);
+
+    res.status(201).json({
+      success: true,
+      message: `Squad created successfully! Assigned Team ID: ${sanitizedTeam.teamId}, 6-digit Team Code: ${sanitizedTeam.teamCode}`,
+      team: sanitizedTeam,
+      teamCode: sanitizedTeam.teamCode,
+      token,
+      pendingApproval: sanitizedTeam.status === 'PENDING_APPROVAL'
+    });
+
+  } catch (err) {
+    console.error('Error during team creation:', err);
+    res.status(400).json({ error: err.message || 'Server error during team creation.' });
+  }
+});
+
+// ---------------------- PREVIEW TEAM BY 6-DIGIT CODE ----------------------
+
+app.get(['/api/teams/code/:code', '/api/teams/preview-code/:code'], async (req, res) => {
+  try {
+    const { code } = req.params;
+    const normalizedCode = (code || '').trim();
+
+    if (!/^\d{6}$/.test(normalizedCode)) {
+      return res.status(400).json({ error: 'Team Code must be a valid 6-digit number.' });
+    }
+
+    const team = isPostgresConnected()
+      ? await pgGetTeamByCode(normalizedCode)
+      : getTeamByCode(normalizedCode);
+
+    if (!team) {
+      return res.status(404).json({ error: `Invalid Team Code "${normalizedCode}". No matching squad found.` });
+    }
+
+    const members = team.members || [];
+    const leader = members.find(m => m.isLeader) || members[0] || null;
+    const isFull = members.length >= 4;
+
+    if (isFull) {
+      return res.status(400).json({
+        error: 'TEAM FULL',
+        isFull: true,
+        teamId: team.teamId,
+        teamName: team.teamName,
+        currentMembers: members.length,
+        maxMembers: 4,
+        leaderName: leader ? leader.name : team.teamName
+      });
+    }
+
+    res.json({
+      success: true,
+      teamId: team.teamId,
+      teamName: team.teamName,
+      teamCode: team.teamCode,
+      status: team.status,
+      currentMembers: members.length,
+      maxMembers: 4,
+      remainingSlots: Math.max(0, 4 - members.length),
+      isFull: false,
+      leaderName: leader ? leader.name : 'Squad Leader',
+      leaderEmail: team.email
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Failed to inspect team code.' });
+  }
+});
+
+// ---------------------- JOIN TEAM VIA 6-DIGIT CODE ----------------------
+
+app.post(['/api/teams/join', '/api/team/join'], async (req, res) => {
+  try {
+    const { teamCode, name, registerNumber, email, year, department, phone } = req.body;
+
+    if (!teamCode) {
+      return res.status(400).json({ error: '6-digit Team Code is required to join a squad.' });
+    }
+
+    const normalizedCode = teamCode.toString().trim();
+    if (!/^\d{6}$/.test(normalizedCode)) {
+      return res.status(400).json({ error: 'Team Code must be a 6-digit number.' });
+    }
+
+    const result = isPostgresConnected()
+      ? await pgJoinTeamByCode(normalizedCode, { name, registerNumber, email, year, department, phone })
+      : joinTeamByCode(normalizedCode, { name, registerNumber, email, year, department, phone });
+
+    const { passwordHash: _, ...sanitizedTeam } = result.team;
+
+    // Record audit log
+    const auditData = {
+      adminEmail: 'System',
+      action: 'MEMBER_JOINED',
+      targetType: 'TEAM',
+      targetId: sanitizedTeam.teamId,
+      details: `Student ${name} (${registerNumber}) enlisted in Team ${sanitizedTeam.teamName} via code ${normalizedCode}. Current roster: ${sanitizedTeam.members.length}/4.`
+    };
+    if (isPostgresConnected()) await pgCreateAuditLog(auditData);
+    else createAuditLog(auditData);
+
+    res.json({
+      success: true,
+      message: `Successfully joined Team ${sanitizedTeam.teamName}! Your squad now has ${sanitizedTeam.members.length}/4 members.`,
+      team: sanitizedTeam,
+      member: result.newMember
+    });
+
+  } catch (err) {
+    console.error('Error during team join:', err);
+    if (err.code === 'TEAM_FULL' || err.message === 'TEAM FULL') {
+      return res.status(400).json({ error: 'TEAM FULL: This squad already contains the maximum limit of 4 members.' });
+    }
+    res.status(400).json({ error: err.message || 'Failed to join team.' });
   }
 });
 

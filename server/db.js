@@ -83,7 +83,15 @@ export function seedInitialAdminJSON() {
     writeJSON(ADMINS_FILE, admins);
     console.log(`[JSON SEED] Initial administrator account initialized (${DEFAULT_ADMIN_EMAIL}).`);
   } else {
-    console.log(`[JSON SEED] Administrator account exists (${DEFAULT_ADMIN_EMAIL}) — preserving password.`);
+    // If still requiring initial password change, ensure password hash matches default password
+    if (existing.mustChangePassword && !bcrypt.compareSync(DEFAULT_ADMIN_PASS, existing.passwordHash)) {
+      existing.passwordHash = bcrypt.hashSync(DEFAULT_ADMIN_PASS, 10);
+      existing.updatedAt = new Date().toISOString();
+      writeJSON(ADMINS_FILE, admins);
+      console.log(`[JSON SEED] Synchronized initial administrator password hash (${DEFAULT_ADMIN_EMAIL}).`);
+    } else {
+      console.log(`[JSON SEED] Administrator account exists (${DEFAULT_ADMIN_EMAIL}) — preserving password.`);
+    }
   }
 }
 
@@ -149,7 +157,55 @@ export function getTeamStats() {
   };
 }
 
-export function createTeam({ teamName, email, passwordHash }) {
+// ---------------------- 6-DIGIT TEAM CODE GENERATION & MANAGEMENT ----------------------
+
+export function generateUniqueTeamCode(existingTeams = null) {
+  const teams = existingTeams || getAllTeams();
+  const existingCodes = new Set(teams.map(t => (t.teamCode || '').toString()).filter(Boolean));
+  let code = '';
+  let attempts = 0;
+  do {
+    code = Math.floor(100000 + Math.random() * 900000).toString();
+    attempts++;
+  } while (existingCodes.has(code) && attempts < 1000);
+  return code;
+}
+
+export function ensureTeamCodes() {
+  const teams = getAllTeams();
+  let modified = false;
+  const existingCodes = new Set();
+  
+  teams.forEach(t => {
+    if (t.teamCode) existingCodes.add(t.teamCode.toString());
+  });
+
+  teams.forEach(t => {
+    if (!t.teamCode) {
+      let code = '';
+      do {
+        code = Math.floor(100000 + Math.random() * 900000).toString();
+      } while (existingCodes.has(code));
+      t.teamCode = code;
+      existingCodes.add(code);
+      modified = true;
+    }
+  });
+
+  if (modified) {
+    writeJSON(TEAMS_FILE, teams);
+    console.log('[JSON SEED] Generated unique 6-digit team codes for existing teams.');
+  }
+}
+ensureTeamCodes();
+
+export function getTeamByCode(teamCode) {
+  const teams = getAllTeams();
+  const normalized = (teamCode || '').toString().trim();
+  return teams.find(t => (t.teamCode || '').toString().trim() === normalized) || null;
+}
+
+export function createTeam({ teamName, email, passwordHash, leaderDetails = null }) {
   const teams = getAllTeams();
 
   if (teams.length >= MAX_TEAMS) {
@@ -173,26 +229,129 @@ export function createTeam({ teamName, email, passwordHash }) {
     throw error;
   }
 
+  // Check if leader registerNumber is already in any other team
+  if (leaderDetails && leaderDetails.registerNumber) {
+    const normalizedReg = leaderDetails.registerNumber.trim().toUpperCase();
+    const existingMember = teams.flatMap(t => t.members || []).find(m => m.registerNumber.toUpperCase() === normalizedReg);
+    if (existingMember) {
+      throw new Error(`Register Number "${leaderDetails.registerNumber}" is already registered in a squad.`);
+    }
+  }
+
   const nextSeq = teams.length + 1;
   const teamId = `ELITEFX${String(nextSeq).padStart(3, '0')}`;
+  const teamCode = generateUniqueTeamCode(teams);
+
+  // If leader details provided, add as Member #1 (Leader)
+  const initialMembers = [];
+  if (leaderDetails && leaderDetails.name && leaderDetails.registerNumber) {
+    initialMembers.push({
+      id: `mem-${Date.now()}-0`,
+      name: leaderDetails.name.trim(),
+      registerNumber: leaderDetails.registerNumber.trim().toUpperCase(),
+      email: (leaderDetails.email || normalizedEmail).trim().toLowerCase(),
+      year: leaderDetails.year || '3rd Year',
+      department: leaderDetails.department || 'Computer Science & Engineering',
+      phone: (leaderDetails.phone || '').trim().replace(/\D/g, ''),
+      isLeader: true,
+      slotId: null,
+      slotTime: null,
+      slotBookedAt: null,
+      updatedAt: new Date().toISOString()
+    });
+  }
 
   const newTeam = {
     teamId,
+    teamCode,
     teamName: normalizedTeamName,
     email: normalizedEmail,
     passwordHash,
     squadSize: 4,
     registeredAt: new Date().toISOString(),
-    status: 'PENDING_APPROVAL', // Default approval status for new registrations
+    status: 'PENDING_APPROVAL',
     rewardPoints: 100,
     role: 'team_leader',
-    members: []
+    members: initialMembers
   };
 
   teams.push(newTeam);
   writeJSON(TEAMS_FILE, teams);
 
   return newTeam;
+}
+
+export function joinTeamByCode(teamCode, studentData) {
+  const normalizedCode = (teamCode || '').toString().trim();
+  if (!/^\d{6}$/.test(normalizedCode)) {
+    throw new Error('Team Code must be a 6-digit number.');
+  }
+
+  const teams = getAllTeams();
+  const teamIndex = teams.findIndex(t => (t.teamCode || '').toString().trim() === normalizedCode);
+
+  if (teamIndex === -1) {
+    throw new Error('Invalid 6-digit Team Code. No team found with this code.');
+  }
+
+  const team = teams[teamIndex];
+  const members = team.members || [];
+
+  // Check 1: Max 4 members
+  if (members.length >= 4) {
+    const err = new Error('TEAM FULL');
+    err.code = 'TEAM_FULL';
+    throw err;
+  }
+
+  const name = (studentData.name || '').trim();
+  const registerNumber = (studentData.registerNumber || '').trim().toUpperCase();
+  const email = (studentData.email || '').trim().toLowerCase();
+  const year = (studentData.year || '').trim();
+  const department = (studentData.department || '').trim();
+  const phone = (studentData.phone || '').trim().replace(/\D/g, '');
+
+  if (!name || !registerNumber || !email || !year || !department || !phone) {
+    throw new Error('All 6 student fields are mandatory to join a squad (Name, Reg No, Email, Year, Dept, Phone).');
+  }
+
+  // Check 2: Already in this team?
+  if (members.some(m => m.registerNumber.toUpperCase() === registerNumber || m.email.toLowerCase() === email)) {
+    throw new Error('You are already a registered member of this team.');
+  }
+
+  // Check 3: Already in another team?
+  for (const otherTeam of teams) {
+    if (otherTeam.teamId === team.teamId) continue;
+    const existing = (otherTeam.members || []).find(m => m.registerNumber.toUpperCase() === registerNumber || m.email.toLowerCase() === email);
+    if (existing) {
+      throw new Error(`This student (${registerNumber}) is already registered in Team ${otherTeam.teamName} (${otherTeam.teamId}). Students are restricted to one team only.`);
+    }
+  }
+
+  const newMember = {
+    id: `mem-${Date.now()}-${members.length}`,
+    name,
+    registerNumber,
+    email,
+    year,
+    department,
+    phone,
+    isLeader: false,
+    slotId: null,
+    slotTime: null,
+    slotBookedAt: null,
+    updatedAt: new Date().toISOString()
+  };
+
+  members.push(newMember);
+  teams[teamIndex].members = members;
+  writeJSON(TEAMS_FILE, teams);
+
+  return {
+    team: teams[teamIndex],
+    newMember
+  };
 }
 
 export function updateTeamMembers(teamId, memberList) {
@@ -317,12 +476,16 @@ export function bookMemberSlot(teamId, registerNumber, slotId) {
 
   const currentMember = members[memberIndex];
 
-  if (currentMember.slotId === normalizedSlot) {
-    return {
-      team,
-      member: currentMember,
-      slots: getSlotStats()
-    };
+  // Lock Phase 1 slot selection: changes are strictly disallowed once confirmed
+  if (currentMember.slotId) {
+    if (currentMember.slotId === normalizedSlot) {
+      return {
+        team,
+        member: currentMember,
+        slots: getSlotStats()
+      };
+    }
+    throw new Error('YOUR PHASE 1 SLOT IS CONFIRMED. SLOT CHANGES ARE NOT PERMITTED.');
   }
 
   const allMembers = teams.flatMap(t => t.members || []);

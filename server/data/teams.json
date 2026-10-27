@@ -23,51 +23,10 @@
         "slotId": "slot-1",
         "slotTime": "9:30 AM - 10:30 AM",
         "slotBookedAt": "2026-10-26T18:53:02.618Z",
-        "updatedAt": "2026-10-26T18:53:02.594Z"
-      },
-      {
-        "id": "mem-1793040782594-1",
-        "name": "Arun Kumar S",
-        "registerNumber": "950721104005",
-        "email": "arunkumar.ug.25.cs@francisxavier.ac.in",
-        "year": "3rd Year",
-        "department": "Computer Science & Engineering",
-        "phone": "9876543211",
-        "isLeader": false,
-        "slotId": "slot-1",
-        "slotTime": "9:30 AM - 10:30 AM",
-        "slotBookedAt": "2026-10-26T18:53:02.618Z",
-        "updatedAt": "2026-10-26T18:53:02.594Z"
-      },
-      {
-        "id": "mem-1793040782594-2",
-        "name": "Bavithra M",
-        "registerNumber": "950721104010",
-        "email": "bavithra.ug.25.cs@francisxavier.ac.in",
-        "year": "3rd Year",
-        "department": "Information Technology",
-        "phone": "9876543212",
-        "isLeader": false,
-        "slotId": "slot-2",
-        "slotTime": "11:00 AM - 12:00 PM",
-        "slotBookedAt": "2026-10-26T18:53:02.618Z",
-        "updatedAt": "2026-10-26T18:53:02.594Z"
-      },
-      {
-        "id": "mem-1793040782594-3",
-        "name": "Chandran R",
-        "registerNumber": "950721104012",
-        "email": "chandran.ug.25.cs@francisxavier.ac.in",
-        "year": "3rd Year",
-        "department": "Artificial Intelligence & Data Science",
-        "phone": "9876543213",
-        "isLeader": false,
-        "slotId": "slot-2",
-        "slotTime": "11:00 AM - 12:00 PM",
-        "slotBookedAt": "2026-10-26T18:53:02.618Z",
-        "updatedAt": "2026-10-26T18:53:02.594Z"
+        "updatedAt": "2026-10-27T04:46:52.664Z"
       }
-    ]
+    ],
+    "teamCode": "637396"
   },
   {
     "teamId": "ELITEFX002",
@@ -94,7 +53,8 @@
         "slotBookedAt": null,
         "updatedAt": "2026-10-26T19:30:00.000Z"
       }
-    ]
+    ],
+    "teamCode": "431923"
   },
   {
     "teamId": "ELITEFX003",
@@ -106,7 +66,8 @@
     "status": "PENDING_APPROVAL",
     "rewardPoints": 100,
     "role": "team_leader",
-    "members": []
+    "members": [],
+    "teamCode": "295393"
   },
   {
     "teamId": "ELITEFX004",
@@ -134,7 +95,8 @@
         "updatedAt": "2026-10-26T20:09:30.319Z"
       }
     ],
-    "approvedAt": "2026-10-26T20:09:29.924Z"
+    "approvedAt": "2026-10-26T20:09:29.924Z",
+    "teamCode": "596770"
   },
   {
     "teamId": "ELITEFX005",
@@ -146,7 +108,8 @@
     "status": "PENDING_APPROVAL",
     "rewardPoints": 100,
     "role": "team_leader",
-    "members": []
+    "members": [],
+    "teamCode": "480586"
   },
   {
     "teamId": "ELITEFX006",
@@ -158,7 +121,8 @@
     "status": "PENDING_APPROVAL",
     "rewardPoints": 100,
     "role": "team_leader",
-    "members": []
+    "members": [],
+    "teamCode": "657485"
   },
   {
     "teamId": "ELITEFX007",
@@ -186,6 +150,159 @@
         "updatedAt": "2026-10-27T04:25:51.289Z"
       }
     ],
-    "approvedAt": "2026-10-27T04:25:51.073Z"
+    "approvedAt": "2026-10-27T04:25:51.073Z",
+    "teamCode": "648927"
+  },
+  {
+    "teamId": "ELITEFX008",
+    "teamName": "zxcb",
+    "email": "dfghj@gmail.com",
+    "passwordHash": "$2b$10$9OAzs8rHbDPKtUkm9i8YMeFpz5/8gjUwxcNVzTufBlzOd6POgaeme",
+    "squadSize": 4,
+    "registeredAt": "2026-10-27T04:30:51.500Z",
+    "status": "PENDING_APPROVAL",
+    "rewardPoints": 100,
+    "role": "team_leader",
+    "members": [],
+    "teamCode": "830254"
+  },
+  {
+    "teamId": "ELITEFX009",
+    "teamName": "INFOX",
+    "email": "deepika@gmail.com",
+    "passwordHash": "$2b$10$OJlDo0m3OJp.X9vP9cS8vOFpjlPO8Zye1472f2KLf70kNzYvVf0Yq",
+    "squadSize": 4,
+    "registeredAt": "2026-10-27T04:31:36.090Z",
+    "status": "PENDING_APPROVAL",
+    "rewardPoints": 100,
+    "role": "team_leader",
+    "members": [],
+    "teamCode": "739862"
+  },
+  {
+    "teamId": "ELITEFX010",
+    "teamName": "ADMIN",
+    "email": "eliteadmin@francisxavier.ac.in",
+    "passwordHash": "$2b$10$94jPGALpvbGnp5HFY.JZaOXjMHokny84bHLffgk0KM4vAv3/RTYLm",
+    "squadSize": 4,
+    "registeredAt": "2026-10-27T04:40:18.537Z",
+    "status": "PENDING_APPROVAL",
+    "rewardPoints": 100,
+    "role": "team_leader",
+    "members": [],
+    "teamCode": "623852"
+  },
+  {
+    "teamId": "ELITEFX011",
+    "teamCode": "146159",
+    "teamName": "QUANTUM_LEAP_1793078559998",
+    "email": "leader_1793078559998@francisxavier.ac.in",
+    "passwordHash": "$2b$10$vx68nTiOlFB2HX4CzhYNsOla/5Sl.a5dFp0a8AfOibOaUeQRuiNOe",
+    "squadSize": 4,
+    "registeredAt": "2026-10-27T05:22:40.249Z",
+    "status": "APPROVED",
+    "rewardPoints": 100,
+    "role": "team_leader",
+    "members": [
+      {
+        "id": "mem-1793078560248-0",
+        "name": "Captain Quantum",
+        "registerNumber": "950721559998",
+        "email": "leader_1793078559998@francisxavier.ac.in",
+        "year": "3rd Year",
+        "department": "Computer Science & Engineering",
+        "phone": "9876543210",
+        "isLeader": true,
+        "slotId": "slot-1",
+        "slotTime": "9:30 AM – 10:30 AM",
+        "slotBookedAt": "2026-10-27T05:22:41.166Z",
+        "updatedAt": "2026-10-27T05:22:40.249Z"
+      },
+      {
+        "id": "mem-1793078560319-1",
+        "name": "Operative 2",
+        "registerNumber": "950721560000",
+        "email": "op2_1793078559998@francisxavier.ac.in",
+        "year": "3rd Year",
+        "department": "Information Technology",
+        "phone": "9876543202",
+        "isLeader": false,
+        "slotId": null,
+        "slotTime": null,
+        "slotBookedAt": null,
+        "updatedAt": "2026-10-27T05:22:40.319Z"
+      },
+      {
+        "id": "mem-1793078560335-2",
+        "name": "Operative 3",
+        "registerNumber": "950721560001",
+        "email": "op3_1793078559998@francisxavier.ac.in",
+        "year": "3rd Year",
+        "department": "Information Technology",
+        "phone": "9876543203",
+        "isLeader": false,
+        "slotId": null,
+        "slotTime": null,
+        "slotBookedAt": null,
+        "updatedAt": "2026-10-27T05:22:40.335Z"
+      },
+      {
+        "id": "mem-1793078560351-3",
+        "name": "Operative 4",
+        "registerNumber": "950721560002",
+        "email": "op4_1793078559998@francisxavier.ac.in",
+        "year": "3rd Year",
+        "department": "Information Technology",
+        "phone": "9876543204",
+        "isLeader": false,
+        "slotId": null,
+        "slotTime": null,
+        "slotBookedAt": null,
+        "updatedAt": "2026-10-27T05:22:40.351Z"
+      }
+    ],
+    "approvedAt": "2026-10-27T05:22:40.922Z"
+  },
+  {
+    "teamId": "ELITEFX012",
+    "teamCode": "810199",
+    "teamName": "ALPHA_TEST_1793078693624",
+    "email": "alpha_1793078693624@francisxavier.ac.in",
+    "passwordHash": "$2b$10$NfCvMqM6MSIHq0Cpv5TA6.ZzUkEOxXAz3rCubTVNt.qSUKxywquEG",
+    "squadSize": 4,
+    "registeredAt": "2026-10-27T05:24:53.731Z",
+    "status": "PENDING_APPROVAL",
+    "rewardPoints": 100,
+    "role": "team_leader",
+    "members": []
+  },
+  {
+    "teamId": "ELITEFX013",
+    "teamCode": "437680",
+    "teamName": "CYBER_VIPERS_1793078693751",
+    "email": "vipers_1793078693751@francisxavier.ac.in",
+    "passwordHash": "$2b$10$TdYwbrP298biqmzSPlQ6deHdQc0hLDsIBsAh0K.USPN7J8ZFEx4Se",
+    "squadSize": 4,
+    "registeredAt": "2026-10-27T05:24:53.848Z",
+    "status": "APPROVED",
+    "rewardPoints": 100,
+    "role": "team_leader",
+    "members": [
+      {
+        "id": "mem-1793078694158-0",
+        "name": "Test Member",
+        "registerNumber": "950721210415",
+        "email": "vipers_1793078693751@francisxavier.ac.in",
+        "year": "3rd Year",
+        "department": "Computer Science",
+        "phone": "9876543210",
+        "isLeader": true,
+        "slotId": null,
+        "slotTime": null,
+        "slotBookedAt": null,
+        "updatedAt": "2026-10-27T05:24:54.158Z"
+      }
+    ],
+    "approvedAt": "2026-10-27T05:24:53.953Z"
   }
 ]

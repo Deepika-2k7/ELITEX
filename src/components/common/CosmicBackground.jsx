@@ -28,21 +28,23 @@ export default function CosmicBackground() {
     window.addEventListener('resize', handleResize);
     window.addEventListener('mousemove', handleMouseMove);
 
-    // High-tech neural / circuit particle nodes
-    const nodeCount = Math.floor((width * height) / 12000);
+    // High-tech neural / space arena particle nodes
+    const nodeCount = Math.floor((width * height) / 14000);
     let nodes = [];
+
+    const colors = ['#00f0ff', '#3b82f6', '#a855f7', '#10b981'];
 
     const initNodes = () => {
       nodes = [];
-      for (let i = 0; i < Math.max(35, nodeCount); i++) {
+      for (let i = 0; i < Math.max(30, nodeCount); i++) {
         nodes.push({
           x: Math.random() * width,
           y: Math.random() * height,
-          radius: Math.random() * 2.5 + 1.2,
-          vx: (Math.random() - 0.5) * 0.4,
-          vy: (Math.random() - 0.5) * 0.4,
-          color: Math.random() > 0.45 ? '#10b981' : '#0284c7', // Bright Green or Electric Blue
-          baseAlpha: Math.random() * 0.5 + 0.3
+          radius: Math.random() * 2 + 1,
+          vx: (Math.random() - 0.5) * 0.35,
+          vy: (Math.random() - 0.5) * 0.35,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          baseAlpha: Math.random() * 0.45 + 0.25
         });
       }
     };
@@ -60,39 +62,39 @@ export default function CosmicBackground() {
 
       ctx.clearRect(0, 0, width, height);
 
-      // Light background gradient: Crisp clean white-to-light-slate with subtle green-blue tint
+      // Deep space navy background gradient
       const bgGrad = ctx.createLinearGradient(0, 0, width, height);
-      bgGrad.addColorStop(0, '#ffffff');
-      bgGrad.addColorStop(0.35, '#f8fafc');
-      bgGrad.addColorStop(0.7, '#f1f5f9');
-      bgGrad.addColorStop(1, '#ecfdf5'); // very soft light emerald hint
+      bgGrad.addColorStop(0, '#040711');
+      bgGrad.addColorStop(0.4, '#070c1e');
+      bgGrad.addColorStop(0.75, '#0b132b');
+      bgGrad.addColorStop(1, '#050917');
       ctx.fillStyle = bgGrad;
       ctx.fillRect(0, 0, width, height);
 
-      // Subtle luminous ambient glows (Navy & Emerald)
+      // Subtle luminous ambient nebula glows (Electric Cyan & Deep Purple)
       const glow1 = ctx.createRadialGradient(
-        width * 0.15 + (mouse.x - width / 2) * 0.02,
-        height * 0.2 + (mouse.y - height / 2) * 0.02,
-        10,
-        width * 0.15,
-        height * 0.2,
-        width * 0.4
+        width * 0.2 + (mouse.x - width / 2) * 0.02,
+        height * 0.25 + (mouse.y - height / 2) * 0.02,
+        15,
+        width * 0.2,
+        height * 0.25,
+        width * 0.45
       );
-      glow1.addColorStop(0, 'rgba(16, 185, 129, 0.08)');
-      glow1.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      glow1.addColorStop(0, 'rgba(0, 240, 255, 0.07)');
+      glow1.addColorStop(1, 'rgba(4, 7, 17, 0)');
       ctx.fillStyle = glow1;
       ctx.fillRect(0, 0, width, height);
 
       const glow2 = ctx.createRadialGradient(
-        width * 0.85 - (mouse.x - width / 2) * 0.02,
-        height * 0.45 - (mouse.y - height / 2) * 0.02,
-        20,
-        width * 0.85,
-        height * 0.45,
-        width * 0.45
+        width * 0.82 - (mouse.x - width / 2) * 0.02,
+        height * 0.5 - (mouse.y - height / 2) * 0.02,
+        25,
+        width * 0.82,
+        height * 0.5,
+        width * 0.5
       );
-      glow2.addColorStop(0, 'rgba(14, 165, 233, 0.07)');
-      glow2.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      glow2.addColorStop(0, 'rgba(168, 85, 247, 0.06)');
+      glow2.addColorStop(1, 'rgba(4, 7, 17, 0)');
       ctx.fillStyle = glow2;
       ctx.fillRect(0, 0, width, height);
 
@@ -103,10 +105,10 @@ export default function CosmicBackground() {
           const dy = nodes[i].y - nodes[j].y;
           const dist = Math.sqrt(dx * dx + dy * dy);
 
-          if (dist < 130) {
-            const alpha = (1 - dist / 130) * 0.15;
-            ctx.strokeStyle = `rgba(16, 185, 129, ${alpha})`;
-            ctx.lineWidth = 1;
+          if (dist < 125) {
+            const alpha = (1 - dist / 125) * 0.12;
+            ctx.strokeStyle = `rgba(0, 240, 255, ${alpha})`;
+            ctx.lineWidth = 0.8;
             ctx.beginPath();
             ctx.moveTo(nodes[i].x, nodes[i].y);
             ctx.lineTo(nodes[j].x, nodes[j].y);
@@ -146,12 +148,12 @@ export default function CosmicBackground() {
   return (
     <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
-      {/* Subtle Futuristic Tech Dot Grid */}
+      {/* Subtle Futuristic Tech Dot Matrix Grid */}
       <div 
-        className="absolute inset-0 opacity-40 pointer-events-none"
+        className="absolute inset-0 opacity-25 pointer-events-none"
         style={{
-          backgroundImage: `radial-gradient(circle, rgba(11, 19, 43, 0.08) 1px, transparent 1px)`,
-          backgroundSize: '32px 32px'
+          backgroundImage: `radial-gradient(circle, rgba(0, 240, 255, 0.12) 1px, transparent 1px)`,
+          backgroundSize: '36px 36px'
         }}
       />
     </div>
