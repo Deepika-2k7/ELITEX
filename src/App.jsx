@@ -12,6 +12,7 @@ import ContactSection from './components/landing/ContactSection';
 import AdminLogin from './components/admin/AdminLogin';
 import AdminDashboard from './components/admin/AdminDashboard';
 import { soundFx } from './utils/audio';
+import { parseResponseSafe } from './utils/api';
 import { Sparkles, ShieldCheck } from 'lucide-react';
 
 export default function App() {
@@ -61,7 +62,7 @@ export default function App() {
         fetch('/api/auth/me', {
           headers: { Authorization: `Bearer ${studentToken}` }
         })
-        .then(res => res.json())
+        .then(res => parseResponseSafe(res))
         .then(data => {
           if (data.authenticated && data.team) {
             setTeam(data.team);
@@ -81,7 +82,7 @@ export default function App() {
         fetch('/api/admin/me', {
           headers: { Authorization: `Bearer ${adminToken}` }
         })
-        .then(res => res.json())
+        .then(res => parseResponseSafe(res))
         .then(data => {
           if (data.authenticated && data.admin) {
             setAdmin(data.admin);

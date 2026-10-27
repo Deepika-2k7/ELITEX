@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { PRELIMS_QUESTIONS } from '../../data/prelimsQuizData';
 import { soundFx } from '../../utils/audio';
+import { parseResponseSafe } from '../../utils/api';
 
 const DEFAULT_SLOTS = [
   { id: 'slot-1', slotNumber: 1, time: '9:30 AM – 10:30 AM', date: 'Monday, 2 November 2026', totalCapacity: 50, bookedCount: 0, remainingCount: 50, isAvailable: true },
@@ -77,7 +78,7 @@ export default function Phase1Section({
     try {
       setSlotsLoading(true);
       const res = await fetch('/api/slots/status');
-      const data = await res.json();
+      const data = await parseResponseSafe(res);
       if (res.ok && data.slots) {
         setSlots(data.slots);
       }
@@ -210,7 +211,7 @@ export default function Phase1Section({
         })
       });
 
-      const data = await res.json();
+      const data = await parseResponseSafe(res);
       if (!res.ok) {
         throw new Error(data.error || 'Failed to book slot.');
       }
@@ -315,7 +316,7 @@ export default function Phase1Section({
           timeSpentSeconds: timeSpent
         })
       });
-      const data = await res.json();
+      const data = await parseResponseSafe(res);
       if (res.ok && data.result) {
         setQuizScore(data.result.score);
       }

@@ -1,5 +1,95 @@
 [
   {
+    "id": "log-1793075151494-116",
+    "adminEmail": "eliteadmin@francisxavier.ac.in",
+    "action": "MALPRACTICE_UPDATED",
+    "targetType": "MALPRACTICE",
+    "targetId": "mal-1793075151476",
+    "details": "Administrator updated incident mal-1793075151476 status to DISMISSED.",
+    "createdAt": "2026-10-27T04:25:51.494Z"
+  },
+  {
+    "id": "log-1793075151479-747",
+    "adminEmail": "eliteadmin@francisxavier.ac.in",
+    "action": "MALPRACTICE_RECORDED",
+    "targetType": "MALPRACTICE",
+    "targetId": "TEST_REG_100",
+    "details": "Administrator recorded FULLSCREEN_EXIT incident for TEST_REG_100.",
+    "createdAt": "2026-10-27T04:25:51.479Z"
+  },
+  {
+    "id": "log-1793075151338-148",
+    "adminEmail": "eliteadmin@francisxavier.ac.in",
+    "action": "SLOT_CANCELLED",
+    "targetType": "SLOT",
+    "targetId": "950721905131",
+    "details": "Administrator cancelled slot booking for 950721905131.",
+    "createdAt": "2026-10-27T04:25:51.338Z"
+  },
+  {
+    "id": "log-1793075151324-573",
+    "adminEmail": "eliteadmin@francisxavier.ac.in",
+    "action": "SLOT_REASSIGNED",
+    "targetType": "SLOT",
+    "targetId": "950721905131",
+    "details": "Administrator reassigned participant 950721905131 to slot-2.",
+    "createdAt": "2026-10-27T04:25:51.324Z"
+  },
+  {
+    "id": "log-1793075151075-187",
+    "adminEmail": "eliteadmin@francisxavier.ac.in",
+    "action": "TEAM_APPROVED",
+    "targetType": "TEAM",
+    "targetId": "ELITEFX007",
+    "details": "Administrator approved registration for Team CYBER_VIPERS_1793075150882 (ELITEFX007).",
+    "createdAt": "2026-10-27T04:25:51.075Z"
+  },
+  {
+    "id": "log-1793075150981-321",
+    "adminEmail": "System",
+    "action": "TEAM_REGISTERED",
+    "targetType": "TEAM",
+    "targetId": "ELITEFX007",
+    "details": "Team CYBER_VIPERS_1793075150882 (ELITEFX007) registered with leader email vipers_1793075150882@francisxavier.ac.in. Status: PENDING_APPROVAL.",
+    "createdAt": "2026-10-27T04:25:50.981Z"
+  },
+  {
+    "id": "log-1793075150874-554",
+    "adminEmail": "System",
+    "action": "TEAM_REGISTERED",
+    "targetType": "TEAM",
+    "targetId": "ELITEFX006",
+    "details": "Team ALPHA_TEST_1793075150777 (ELITEFX006) registered with leader email alpha_1793075150777@francisxavier.ac.in. Status: PENDING_APPROVAL.",
+    "createdAt": "2026-10-27T04:25:50.874Z"
+  },
+  {
+    "id": "log-1793075150768-5",
+    "adminEmail": "eliteadmin@francisxavier.ac.in",
+    "action": "ADMIN_LOGIN",
+    "targetType": "ADMIN",
+    "targetId": "admin-1793044379998",
+    "details": "Administrator logged in from IP 127.0.0.1.",
+    "createdAt": "2026-10-27T04:25:50.768Z"
+  },
+  {
+    "id": "log-1793075143585-879",
+    "adminEmail": "eliteadmin@francisxavier.ac.in",
+    "action": "ADMIN_LOGIN",
+    "targetType": "ADMIN",
+    "targetId": "admin-1793044379998",
+    "details": "Administrator logged in from IP 127.0.0.1.",
+    "createdAt": "2026-10-27T04:25:43.585Z"
+  },
+  {
+    "id": "log-1793075112100-741",
+    "adminEmail": "System",
+    "action": "TEAM_REGISTERED",
+    "targetType": "TEAM",
+    "targetId": "ELITEFX005",
+    "details": "Team TEST_TEAM_PROXY (ELITEFX005) registered with leader email proxy_test@francisxavier.ac.in. Status: PENDING_APPROVAL.",
+    "createdAt": "2026-10-27T04:25:12.100Z"
+  },
+  {
     "id": "log-1793045370638-73",
     "adminEmail": "eliteadmin@francisxavier.ac.in",
     "action": "MALPRACTICE_UPDATED",

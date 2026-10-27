@@ -18,6 +18,7 @@ import {
   Clock
 } from 'lucide-react';
 import { soundFx } from '../../utils/audio';
+import { parseResponseSafe } from '../../utils/api';
 
 export default function AuthPage({ onAuthSuccess, onToast, onOpenAdminLogin }) {
   const [mode, setMode] = useState('register'); // 'register' or 'login'
@@ -110,7 +111,7 @@ export default function AuthPage({ onAuthSuccess, onToast, onOpenAdminLogin }) {
         })
       });
 
-      const data = await res.json();
+      const data = await parseResponseSafe(res);
 
       if (!res.ok) {
         throw new Error(data.error || 'Team registration failed. Please try again.');
@@ -168,7 +169,7 @@ export default function AuthPage({ onAuthSuccess, onToast, onOpenAdminLogin }) {
         })
       });
 
-      const data = await res.json();
+      const data = await parseResponseSafe(res);
       if (!res.ok) {
         throw new Error(data.error || 'Invalid login credentials.');
       }

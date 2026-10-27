@@ -18,6 +18,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { soundFx } from '../../utils/audio';
+import { parseResponseSafe } from '../../utils/api';
 
 export const DEPARTMENTS = [
   'Computer Science & Engineering',
@@ -256,7 +257,7 @@ export default function TeamDetailsModal({
         body: JSON.stringify({ members })
       });
 
-      const data = await res.json();
+      const data = await parseResponseSafe(res);
 
       if (!res.ok) {
         throw new Error(data.error || 'Failed to save team member details.');

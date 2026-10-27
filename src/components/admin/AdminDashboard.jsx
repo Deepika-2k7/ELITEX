@@ -21,6 +21,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { soundFx } from '../../utils/audio';
+import { parseResponseSafe } from '../../utils/api';
 
 // Sub-views
 import AdminOverviewView from './views/AdminOverviewView';
@@ -55,7 +56,7 @@ export default function AdminDashboard({ admin, onLogout, onSwitchToStudent, onT
       const res = await fetch('/api/admin/stats', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      const data = await res.json();
+      const data = await parseResponseSafe(res);
       if (res.ok && data.stats) {
         setStats(data.stats);
       }
@@ -114,7 +115,7 @@ export default function AdminDashboard({ admin, onLogout, onSwitchToStudent, onT
         })
       });
 
-      const data = await res.json();
+      const data = await parseResponseSafe(res);
       if (!res.ok) throw new Error(data.error || 'Failed to rotate password.');
 
       soundFx.playSuccess();

@@ -353,7 +353,7 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-app.post('/api/auth/login', async (req, res) => {
+app.post(['/api/auth/login', '/api/login'], async (req, res) => {
   try {
     const { identifier, email, password } = req.body;
     const loginTarget = identifier || email;
@@ -425,7 +425,7 @@ app.get('/api/auth/me', authenticateToken, (req, res) => {
 
 // ---------------------- TEAM MEMBERS (TEAM DETAILS) ----------------------
 
-app.get('/api/team/members', authenticateToken, async (req, res) => {
+app.get(['/api/team/members', '/api/team-details'], authenticateToken, async (req, res) => {
   try {
     const team = isPostgresConnected() 
       ? await pgGetTeamById(req.team.teamId)
@@ -444,7 +444,7 @@ app.get('/api/team/members', authenticateToken, async (req, res) => {
   }
 });
 
-app.post('/api/team/members', authenticateToken, async (req, res) => {
+app.post(['/api/team/members', '/api/team-details'], authenticateToken, async (req, res) => {
   try {
     const { members } = req.body;
     if (!Array.isArray(members)) {
@@ -470,7 +470,7 @@ app.post('/api/team/members', authenticateToken, async (req, res) => {
 
 // ---------------------- PRELIMS SLOTS ----------------------
 
-app.get('/api/slots/status', async (req, res) => {
+app.get(['/api/slots/status', '/api/slot-bookings'], async (req, res) => {
   try {
     const slots = isPostgresConnected() ? await pgGetSlotStats() : getSlotStats();
     res.json({
@@ -484,7 +484,7 @@ app.get('/api/slots/status', async (req, res) => {
   }
 });
 
-app.post('/api/slots/book', authenticateToken, async (req, res) => {
+app.post(['/api/slots/book', '/api/slot-bookings'], authenticateToken, async (req, res) => {
   try {
     const { registerNumber, slotId } = req.body;
 
@@ -1304,7 +1304,7 @@ app.delete('/api/admin/announcements/:id', authenticateAdmin, async (req, res) =
 });
 
 // Start Express Server
-app.listen(PORT, async () => {
+app.listen(PORT, '0.0.0.0', async () => {
   console.log(`\n==================================================`);
   console.log(`[ELITEX HACKATHON 2026] Backend Server Active`);
   console.log(`Port: http://localhost:${PORT}`);

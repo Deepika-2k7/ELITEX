@@ -135,5 +135,57 @@
       }
     ],
     "approvedAt": "2026-10-26T20:09:29.924Z"
+  },
+  {
+    "teamId": "ELITEFX005",
+    "teamName": "TEST_TEAM_PROXY",
+    "email": "proxy_test@francisxavier.ac.in",
+    "passwordHash": "$2b$10$lla5T775E/gdiX4/Z21IUu7oSU/jjBdtrQeQXASD1A77M.gYPnaSm",
+    "squadSize": 4,
+    "registeredAt": "2026-10-27T04:25:12.094Z",
+    "status": "PENDING_APPROVAL",
+    "rewardPoints": 100,
+    "role": "team_leader",
+    "members": []
+  },
+  {
+    "teamId": "ELITEFX006",
+    "teamName": "ALPHA_TEST_1793075150777",
+    "email": "alpha_1793075150777@francisxavier.ac.in",
+    "passwordHash": "$2b$10$1lyt6kHoBNo7iVDPi7UtPeWuH.1U5CKrCfCZSXMjLyMq5UKSUC9Li",
+    "squadSize": 4,
+    "registeredAt": "2026-10-27T04:25:50.871Z",
+    "status": "PENDING_APPROVAL",
+    "rewardPoints": 100,
+    "role": "team_leader",
+    "members": []
+  },
+  {
+    "teamId": "ELITEFX007",
+    "teamName": "CYBER_VIPERS_1793075150882",
+    "email": "vipers_1793075150882@francisxavier.ac.in",
+    "passwordHash": "$2b$10$ojTmaoNAFudGcNeiFPs5Jeis8vL3EiaQpldgvKcqfcvDikNl9Fqt2",
+    "squadSize": 4,
+    "registeredAt": "2026-10-27T04:25:50.979Z",
+    "status": "APPROVED",
+    "rewardPoints": 100,
+    "role": "team_leader",
+    "members": [
+      {
+        "id": "mem-1793075151289-0",
+        "name": "Test Member",
+        "registerNumber": "950721905131",
+        "email": "vipers_1793075150882@francisxavier.ac.in",
+        "year": "3rd Year",
+        "department": "Computer Science",
+        "phone": "9876543210",
+        "isLeader": true,
+        "slotId": null,
+        "slotTime": null,
+        "slotBookedAt": null,
+        "updatedAt": "2026-10-27T04:25:51.289Z"
+      }
+    ],
+    "approvedAt": "2026-10-27T04:25:51.073Z"
   }
 ]

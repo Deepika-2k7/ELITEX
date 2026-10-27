@@ -13,6 +13,7 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { soundFx } from '../../utils/audio';
+import { parseResponseSafe } from '../../utils/api';
 
 export default function AdminLogin({ onAdminLoginSuccess, onSwitchToStudent, onToast }) {
   const [email, setEmail] = useState('eliteadmin@francisxavier.ac.in');
@@ -43,7 +44,7 @@ export default function AdminLogin({ onAdminLoginSuccess, onSwitchToStudent, onT
         })
       });
 
-      const data = await res.json();
+      const data = await parseResponseSafe(res);
 
       if (!res.ok) {
         throw new Error(data.error || 'Administrator authentication failed.');

@@ -1,5 +1,20 @@
 [
   {
+    "id": "mal-1793075151476",
+    "teamId": "ELITEFX007",
+    "registerNumber": "TEST_REG_100",
+    "participantName": "Test Participant",
+    "incidentType": "FULLSCREEN_EXIT",
+    "description": "Candidate exited fullscreen mode 3 times",
+    "evidence": "Timestamp: 2026-11-02T10:15:00Z",
+    "status": "DISMISSED",
+    "actionTaken": "None - OS Notification glitch verified",
+    "adminNotes": "Committee reviewed browser logs and confirmed innocent system notification popup.",
+    "recordedBy": "eliteadmin@francisxavier.ac.in",
+    "createdAt": "2026-10-27T04:25:51.476Z",
+    "updatedAt": "2026-10-27T04:25:51.491Z"
+  },
+  {
     "id": "mal-1793045370571",
     "teamId": "ELITEFX004",
     "registerNumber": "TEST_REG_100",
